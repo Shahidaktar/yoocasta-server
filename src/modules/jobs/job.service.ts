@@ -275,7 +275,14 @@ export const getPublicJobById = async (jobId: string) => {
   });
   if (!job) throw { statusCode: 404, message: 'Job not found' };
 
-  const resolvedRoles = await Promise.all(job.roles.map(resolveIdArrays));
+  const rolesWithAppCount = await Promise.all(
+    job.roles.map(async (role) => {
+      const appCount = await prisma.application.count({ where: { roleId: role.id } });
+      return { ...role, _count: { applications: appCount } };
+    })
+  );
+
+  const resolvedRoles = await Promise.all(rolesWithAppCount.map(resolveIdArrays));
 
   await prisma.job.update({
     where: { id: jobId },

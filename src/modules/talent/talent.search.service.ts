@@ -283,13 +283,17 @@ const PHYSICAL_CATEGORICAL_FIELDS = ['hairColor', 'hairType', 'hairLength', 'eye
 
 // Fetch options for dropdowns
 export const getTalentFilterOptions = async () => {
-  const [categories, countries, cities, nationalities, ethnicities, languages, dialects, attributeRows, physicalRows] = await Promise.all([
+  const [categories, countries, cities] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: 'asc' } }),
     prisma.country.findMany({ orderBy: { name: 'asc' } }),
     prisma.city.findMany({ orderBy: { name: 'asc' } }),
+  ]);
+  const [nationalities, ethnicities, languages] = await Promise.all([
     prisma.nationality.findMany({ orderBy: { name: 'asc' } }),
     prisma.ethnicity.findMany({ orderBy: { name: 'asc' } }),
     prisma.language.findMany({ orderBy: { name: 'asc' } }),
+  ]);
+  const [dialects, attributeRows, physicalRows] = await Promise.all([
     prisma.dialect.findMany({ orderBy: { name: 'asc' } }),
     prisma.profileAttribute.findMany({ select: { key: true, value: true } }),
     prisma.talentProfile.findMany({

@@ -13,6 +13,7 @@ import invitationRoutes from './modules/invitations/invitation.routes';
 import blogRoutes from './modules/blogs/blog.routes';
 import planRoutes from './modules/plans/plan.routes';
 import contactRoutes from './modules/contact/contact.routes';
+import adminRoutes from './modules/admin/admin.routes';
 import * as castBagController from './modules/recruiter/castBag.controller';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -62,6 +63,7 @@ app.use('/api/v1/invitations', invitationRoutes);
 app.use('/api/v1/blogs', blogRoutes);
 app.use('/api/v1/plans', planRoutes);
 app.use('/api/v1/contact', contactRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 app.get('/api/v1/cast-bags/public/:token', castBagController.getPublic);
 
