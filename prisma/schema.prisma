@@ -103,6 +103,7 @@ model User {
   favourites        CompanyFavourite[]
   googleOauth       GoogleOAuth?
   subscription      UserSubscription?
+  paymentTransactions PaymentTransaction[]
 
   emailVerifyToken          String?
   emailVerifyTokenCreatedAt DateTime?
@@ -764,7 +765,8 @@ model Plan {
   maxJobsPerMonth Int      @default(1) // 999 = Unlimited
   priority        Int      @default(0) // 0 = Last, 1 = Middle, 2 = Top
 
-  subscriptions   UserSubscription[]
+  subscriptions        UserSubscription[]
+  paymentTransactions  PaymentTransaction[]
 
   @@map("plans")
 }
@@ -781,6 +783,22 @@ model UserSubscription {
   updatedAt       DateTime @updatedAt
 
   @@map("user_subscriptions")
+}
+
+model PaymentTransaction {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          Plan     @relation(fields: [planId], references: [id])
+  orderId       String   @unique
+  refId         String?
+  amount        Float
+  duration      String
+  status        String   @default("COMPLETED")
+  createdAt     DateTime @default(now())
+
+  @@map("payment_transactions")
 }
 
 
