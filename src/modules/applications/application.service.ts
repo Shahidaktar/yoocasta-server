@@ -1,5 +1,5 @@
 import prisma from '../../config/db';
-import { sendEmail } from '../../config/email';
+import { sendEmail, applicationConfirmationTemplate, newApplicationNotificationTemplate } from '../../config/email';
 
 const R2_BASE = process.env.R2_PUBLIC_URL as string;
 
@@ -41,6 +41,42 @@ export const applyForRole = async (userId: string, roleId: string, formData: any
       formData,
     },
   });
+
+  // Send confirmation to applicant
+  const applicant = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true, email: true },
+  });
+  if (applicant?.email) {
+    sendEmail(
+      applicant.email,
+      'Application Submitted — Yoocasta',
+      applicationConfirmationTemplate(
+        applicant.firstName || 'Applicant',
+        role.job.title || 'Untitled Job',
+        role.title || 'Untitled Role',
+      )
+    ).catch(err => console.error('Failed to send application confirmation email:', err));
+  }
+
+  // Send notification to recruiter
+  const company = await prisma.companyProfile.findUnique({
+    where: { id: role.job.companyId },
+    include: { user: { select: { email: true, firstName: true } } },
+  });
+  if (company?.user?.email) {
+    const talentName = applicant?.firstName || 'A talent';
+    sendEmail(
+      company.user.email,
+      'New Application Received — Yoocasta',
+      newApplicationNotificationTemplate(
+        company.companyName || company.user.firstName || 'Recruiter',
+        talentName,
+        role.job.title || 'Untitled Job',
+        role.title || 'Untitled Role',
+      )
+    ).catch(err => console.error('Failed to send recruiter notification email:', err));
+  }
 
   return application;
 };

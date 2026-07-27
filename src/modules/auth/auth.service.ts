@@ -1,7 +1,7 @@
 import prisma from '../../config/db';
 import { hashPassword, comparePassword, generateOTP, generateEmailVerifyToken } from '../../utils/hash';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
-import { sendEmail, otpEmailTemplate, welcomeEmailTemplate, verifyEmailTemplate } from '../../config/email';
+import { sendEmail, otpEmailTemplate, recruiterWelcomeEmailTemplate, adminNewRecruiterNotificationTemplate, welcomeNewUserTemplate, adminNewTalentNotificationTemplate, welcomeEmailTemplate, verifyEmailTemplate } from '../../config/email';
 
 // ─── Register Talent ───────────────────────────────────────────
 export const registerTalent = async (data: {
@@ -43,6 +43,18 @@ export const registerTalent = async (data: {
     user.email,
     'Verify your email — Yoocasta',
     otpEmailTemplate(data.firstName, otp)
+  );
+
+  await sendEmail(
+    user.email,
+    'Welcome to Yoocasta — Next Steps',
+    welcomeNewUserTemplate(data.firstName)
+  );
+
+  await sendEmail(
+    process.env.SMTP_USER || 'shahid.indoage@gmail.com',
+    `New Talent Joined — ${data.firstName} ${data.lastName}`,
+    adminNewTalentNotificationTemplate(`${data.firstName} ${data.lastName}`, user.email, data.phone || '')
   );
 
   const accessToken = generateAccessToken({ userId: user.id, email: user.email, role: user.role });
@@ -94,6 +106,18 @@ export const registerRecruiter = async (data: {
     user.email,
     'Verify your email — Yoocasta',
     otpEmailTemplate(data.companyName, otp)
+  );
+
+  await sendEmail(
+    user.email,
+    'Welcome to Yoocasta — Next Steps',
+    recruiterWelcomeEmailTemplate(data.contactPerson)
+  );
+
+  await sendEmail(
+    process.env.SMTP_USER || 'shahid.indoage@gmail.com',
+    `New Recruiter Joined — ${data.companyName}`,
+    adminNewRecruiterNotificationTemplate(data.contactPerson, data.companyName, user.email)
   );
 
   const accessToken = generateAccessToken({ userId: user.id, email: user.email, role: user.role });

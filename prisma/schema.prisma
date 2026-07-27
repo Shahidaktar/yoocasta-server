@@ -691,9 +691,10 @@ model City {
 }
 
 model Country {
-  id    String @id @default(uuid())
-  name  String @unique
-  cities City[]
+  id        String @id @default(uuid())
+  name      String @unique
+  phoneCode String @default("")
+  cities    City[]
 
   @@map("countries")
 }

@@ -9,7 +9,7 @@ export const registerTalentValidation = [
     .withMessage('Password must be at least 8 characters')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage('Password must contain uppercase, lowercase and number'),
-  body('phone').optional().isMobilePhone('any').withMessage('Valid phone number required'),
+  body('phone').optional().notEmpty().withMessage('Phone number is required'),
 ];
 
 export const registerRecruiterValidation = [
@@ -21,7 +21,7 @@ export const registerRecruiterValidation = [
     .withMessage('Password must be at least 8 characters')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage('Password must contain uppercase, lowercase and number'),
-  body('phone').optional().isMobilePhone('any').withMessage('Valid phone number required'),
+  body('phone').notEmpty().withMessage('Phone number is required'),
 ];
 
 export const loginValidation = [

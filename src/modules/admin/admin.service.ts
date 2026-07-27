@@ -2,6 +2,7 @@ import prisma from '../../config/db';
 import { comparePassword } from '../../utils/hash';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { JwtPayload } from '../../utils/jwt';
+import { sendEmail, recruiterVerifiedEmailTemplate, jobApprovedTemplate, jobRejectedTemplate } from '../../config/email';
 
 export const login = async (email: string, password: string) => {
   const admin = await prisma.admin.findUnique({ where: { email } });
@@ -242,13 +243,14 @@ export const getCompanies = async (page: number, limit: number, search?: string,
         email: true,
         phone: true,
         isVerified: true,
+        profileCompleted: true,
         status: true,
         createdAt: true,
         city: {
           select: { name: true, country: { select: { name: true } } },
         },
         companyProfile: {
-          select: { companyName: true },
+          select: { companyName: true, companyType: true, website: true, description: true, tradeLicense: true, tradeLicenseFile: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -263,6 +265,12 @@ export const getCompanies = async (page: number, limit: number, search?: string,
     id: c.id,
     name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || '—',
     companyName: c.companyProfile?.companyName || '—',
+    companyType: c.companyProfile?.companyType || null,
+    website: c.companyProfile?.website || null,
+    description: c.companyProfile?.description || null,
+    tradeLicense: c.companyProfile?.tradeLicense || null,
+    tradeLicenseFile: c.companyProfile?.tradeLicenseFile ? `${process.env.R2_PUBLIC_URL}/license/${c.companyProfile.tradeLicenseFile}` : null,
+    profileCompleted: c.profileCompleted,
     isVerified: c.isVerified,
     status: c.status === 'ACTIVE' ? 'active' : 'inactive',
     country: c.city?.country?.name || '—',
@@ -292,6 +300,15 @@ export const updateCompanyVerify = async (companyId: string, isVerified: boolean
     data: { isVerified },
     select: { id: true, isVerified: true },
   });
+
+  if (isVerified) {
+    const company = await prisma.companyProfile.findUnique({ where: { userId: companyId } });
+    sendEmail(
+      user.email,
+      'Your Account Has Been Verified — Yoocasta',
+      recruiterVerifiedEmailTemplate(company?.companyName || user.firstName || 'Recruiter')
+    ).catch(err => console.error('Failed to send verification email:', err));
+  }
 
   return { id: updated.id, isVerified: updated.isVerified };
 };
@@ -651,7 +668,16 @@ export const adminUpdateJob = async (jobId: string, data: any) => {
 };
 
 export const updateJobStatus = async (jobId: string, status: 'APPROVED' | 'PENDING' | 'REJECTED') => {
-  const job = await prisma.job.findUnique({ where: { id: jobId } });
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    include: {
+      company: {
+        include: {
+          user: { select: { email: true, firstName: true, lastName: true } },
+        },
+      },
+    },
+  });
   if (!job) throw { statusCode: 404, message: 'Job not found' };
 
   const updated = await prisma.job.update({
@@ -659,6 +685,27 @@ export const updateJobStatus = async (jobId: string, status: 'APPROVED' | 'PENDI
     data: { status },
     select: { id: true, status: true },
   });
+
+  // Notify recruiter via email
+  if ((status === 'APPROVED' || status === 'REJECTED') && job.company?.user?.email) {
+    const companyName = job.company.companyName || 'Your Company';
+    const recipientName = job.company.user.firstName || companyName;
+    const jobTitle = job.title || 'Untitled';
+
+    if (status === 'APPROVED') {
+      sendEmail(
+        job.company.user.email,
+        'Your Job Has Been Approved — Yoocasta',
+        jobApprovedTemplate(recipientName, jobTitle)
+      ).catch(err => console.error('Failed to send job approved email:', err));
+    } else {
+      sendEmail(
+        job.company.user.email,
+        'Your Job Has Been Rejected — Yoocasta',
+        jobRejectedTemplate(recipientName, jobTitle)
+      ).catch(err => console.error('Failed to send job rejected email:', err));
+    }
+  }
 
   return {
     id: updated.id,

@@ -13,6 +13,7 @@ import {
   getFormOptions,
   getPublicJobById,
   getPublicJobs,
+  getCountries,
 } from './job.controller';
 
 const router = Router();
@@ -21,6 +22,7 @@ const router = Router();
 router.get('/public', getPublicJobs);
 router.get('/public/:jobId', getPublicJobById);
 router.get('/options', getFormOptions);
+router.get('/countries', getCountries);
 
 router.use(authenticate);
 

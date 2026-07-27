@@ -1,4 +1,5 @@
 import prisma from '../../config/db';
+import { sendEmail, jobUnderReviewTemplate, adminNewJobNotificationTemplate } from '../../config/email';
 
 // ─── Form Options ──────────────────────────────────────────────
 export const getFormOptions = async () => {
@@ -180,6 +181,29 @@ export const createJob = async (userId: string, data: any) => {
     },
     include: { roles: true }
   });
+
+  // Send "under review" email to recruiter
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, firstName: true, lastName: true },
+  });
+  const companyName = company.companyName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Recruiter';
+  const recipientName = user?.firstName || companyName;
+  const jobTitle = job.title || 'Untitled';
+
+  sendEmail(
+    user?.email || '',
+    'Your Job Is Under Review — Yoocasta',
+    jobUnderReviewTemplate(recipientName, jobTitle)
+  ).catch(err => console.error('Failed to send job review email:', err));
+
+  // Send notification to SMTP user (admin)
+  const smtpUser = process.env.SMTP_USER || 'support@yoocasta.com';
+  sendEmail(
+    smtpUser,
+    'New Job Posted — Needs Review — Yoocasta',
+    adminNewJobNotificationTemplate(companyName, jobTitle, job.id)
+  ).catch(err => console.error('Failed to send admin notification email:', err));
 
   return job;
 };

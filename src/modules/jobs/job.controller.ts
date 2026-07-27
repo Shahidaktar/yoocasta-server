@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import * as jobService from './job.service';
 import { ApiResponse } from '../../utils/apiResponse';
+import prisma from '../../config/db';
 
 export const getPublicJobs = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -20,8 +21,18 @@ export const getPublicJobById = async (req: AuthRequest, res: Response, next: Ne
 
 export const getFormOptions = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const result = await jobService.getFormOptions();
-    ApiResponse.success(res, result, 'Options fetched');
+    const data = await jobService.getFormOptions();
+    ApiResponse.success(res, data, 'Options fetched');
+  } catch (err) { next(err); }
+};
+
+export const getCountries = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const countries = await prisma.country.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, phoneCode: true },
+    });
+    ApiResponse.success(res, countries, 'Countries fetched');
   } catch (err) { next(err); }
 };
 
