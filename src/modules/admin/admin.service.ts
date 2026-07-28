@@ -3,6 +3,8 @@ import { comparePassword } from '../../utils/hash';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { JwtPayload } from '../../utils/jwt';
 import { sendEmail, recruiterVerifiedEmailTemplate, jobApprovedTemplate, jobRejectedTemplate } from '../../config/email';
+import { CATEGORY_MAP } from '../blogs/blog.service';
+import { uploadToR2 } from '../../config/r2';
 
 export const login = async (email: string, password: string) => {
   const admin = await prisma.admin.findUnique({ where: { email } });
@@ -765,4 +767,105 @@ export const updateTalentStatus = async (talentId: string, status: 'ACTIVE' | 'I
   });
 
   return { id: updated.id, status: updated.status === 'ACTIVE' ? 'active' : 'inactive' };
+};
+
+export const getAdminBlogs = async (page: number, limit: number) => {
+  const skip = (page - 1) * limit;
+
+  const [blogs, total] = await Promise.all([
+    prisma.blog.findMany({
+      skip,
+      take: limit,
+      orderBy: { blogDate: 'desc' },
+    }),
+    prisma.blog.count(),
+  ]);
+
+  const mapped = blogs.map((b) => ({
+    id: Number(b.id),
+    categoryId: b.categoryCategoryId ? Number(b.categoryCategoryId) : null,
+    category: b.categoryCategoryId ? (CATEGORY_MAP[Number(b.categoryCategoryId)] || 'General') : 'General',
+    title: b.blogTitle || '',
+    description: b.blogDescription || '',
+    date: b.blogDate || '',
+    image: b.blogImage || '',
+  }));
+
+  return {
+    blogs: mapped,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+export const createBlog = async (data: {
+  title: string;
+  description: string;
+  image: string;
+  date: string;
+  categoryId: number | null;
+}) => {
+  const maxResult = await prisma.blog.findFirst({ orderBy: { id: 'desc' }, select: { id: true } });
+  const nextId = maxResult ? Number(maxResult.id) + 1 : 1;
+
+  const blog = await prisma.blog.create({
+    data: {
+      id: BigInt(nextId),
+      blogTitle: data.title,
+      blogDescription: data.description,
+      blogImage: data.image,
+      blogDate: data.date || new Date().toISOString(),
+      categoryCategoryId: data.categoryId ? BigInt(data.categoryId) : null,
+    },
+  });
+
+  return {
+    id: Number(blog.id),
+    categoryId: blog.categoryCategoryId ? Number(blog.categoryCategoryId) : null,
+    category: blog.categoryCategoryId ? (CATEGORY_MAP[Number(blog.categoryCategoryId)] || 'General') : 'General',
+    title: blog.blogTitle || '',
+    description: blog.blogDescription || '',
+    date: blog.blogDate || '',
+    image: blog.blogImage || '',
+  };
+};
+
+export const updateBlog = async (
+  blogId: number,
+  data: { title: string; description: string; image?: string; date: string; categoryId: number | null }
+) => {
+  const blog = await prisma.blog.update({
+    where: { id: BigInt(blogId) },
+    data: {
+      blogTitle: data.title,
+      blogDescription: data.description,
+      ...(data.image && { blogImage: data.image }),
+      blogDate: data.date,
+      categoryCategoryId: data.categoryId ? BigInt(data.categoryId) : null,
+    },
+  });
+
+  return {
+    id: Number(blog.id),
+    categoryId: blog.categoryCategoryId ? Number(blog.categoryCategoryId) : null,
+    category: blog.categoryCategoryId ? (CATEGORY_MAP[Number(blog.categoryCategoryId)] || 'General') : 'General',
+    title: blog.blogTitle || '',
+    description: blog.blogDescription || '',
+    date: blog.blogDate || '',
+    image: blog.blogImage || '',
+  };
+};
+
+export const deleteBlog = async (blogId: number) => {
+  await prisma.blog.delete({ where: { id: BigInt(blogId) } });
+  return { id: blogId };
+};
+
+export const uploadBlogImageService = async (file: Express.Multer.File) => {
+  const url = await uploadToR2(file.buffer, file.originalname, file.mimetype, 'blogs');
+  return { url, message: 'Blog image uploaded successfully' };
 };

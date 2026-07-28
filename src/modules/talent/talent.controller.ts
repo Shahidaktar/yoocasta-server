@@ -28,6 +28,16 @@ export const getFilterOptions = async (req: Request, res: Response) => {
   }
 };
 
+export const getCategoryCounts = async (req: Request, res: Response) => {
+  try {
+    const data = await talentSearchService.getTalentCategoryCounts();
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to load category counts' });
+  }
+};
+
 export const search = async (req: Request, res: Response) => {
   try {
     const result = await talentSearchService.searchTalents(req.body);

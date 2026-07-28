@@ -8,6 +8,7 @@ const router = Router();
 
 router.get('/search/options', talentController.getFilterOptions);
 router.post('/search', talentController.search);
+router.get('/category-counts', talentController.getCategoryCounts);
 router.get('/:username', optionalAuthenticate, talentController.getPublicProfile);
 
 export default router;

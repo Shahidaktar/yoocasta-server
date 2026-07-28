@@ -40,6 +40,12 @@ export const uploadCompanyLogo = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 }).single('logo');
 
+export const uploadBlogImage = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+}).single('blogImage');
+
 export const uploadTradeLicense = multer({
   storage,
   fileFilter: (req, file, cb) => {

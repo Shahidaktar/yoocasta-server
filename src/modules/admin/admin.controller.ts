@@ -210,3 +210,59 @@ export const updateTalentStatus = async (req: Request, res: Response, next: Next
     next(err);
   }
 };
+
+export const getAdminBlogs = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await adminService.getAdminBlogs(page, limit);
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createBlog = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { title, description, image, date, categoryId } = req.body;
+    if (!title) return ApiResponse.error(res, 'Title is required', 400);
+    const result = await adminService.createBlog({ title, description: description || '', image: image || '', date: date || '', categoryId: categoryId || null });
+    return ApiResponse.success(res, result, 'Blog created');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateBlog = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const blogId = parseInt(req.params.id as string);
+    if (isNaN(blogId)) return ApiResponse.error(res, 'Invalid blog ID', 400);
+    const { title, description, image, date, categoryId } = req.body;
+    if (!title) return ApiResponse.error(res, 'Title is required', 400);
+    const result = await adminService.updateBlog(blogId, { title, description: description || '', image: image || undefined, date: date || '', categoryId: categoryId || null });
+    return ApiResponse.success(res, result, 'Blog updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteBlog = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const blogId = parseInt(req.params.id as string);
+    if (isNaN(blogId)) return ApiResponse.error(res, 'Invalid blog ID', 400);
+    await adminService.deleteBlog(blogId);
+    return ApiResponse.success(res, null, 'Blog deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const uploadBlogImageHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) return ApiResponse.error(res, 'No file uploaded', 400);
+    const result = await adminService.uploadBlogImageService(req.file);
+    return ApiResponse.success(res, result, 'Image uploaded', 201);
+  } catch (err) {
+    next(err);
+  }
+};

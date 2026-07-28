@@ -2,7 +2,15 @@ import prisma from '../../config/db';
 
 export const CATEGORY_MAP: Record<number, string> = {
   1: 'Actors & Extras',
+  2: 'Models',
   3: 'Dancers',
+  4: 'Singers',
+  5: 'Photographers',
+  6: 'Directors & Crew',
+  7: 'Promoters & Hosts',
+  8: 'Makeup & Hair Artists',
+  9: 'Cinematographers / Videographers',
+  10: 'Voice Over Artists',
   11: 'MC/RJ/VJ/Voice Over',
 };
 

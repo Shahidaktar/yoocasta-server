@@ -186,8 +186,8 @@ if (params.professional?.length) {
 
   // 8. Sorting
   let orderBy: any = { createdAt: 'desc' };
-if (params.sort === 'a-z') orderBy = { firstName: 'desc' };
-if (params.sort === 'z-a') orderBy = { firstName: 'asc' };
+if (params.sort === 'a-z') orderBy = { firstName: 'asc' };
+if (params.sort === 'z-a') orderBy = { firstName: 'desc' };
 if (params.sort === 'most_viewed') orderBy = { talentProfile: { views: 'desc' } };
 
   const [talents, total] = await Promise.all([
@@ -282,6 +282,31 @@ const PHYSICAL_NUMERIC_FIELDS = ['height', 'weight', 'chest', 'waist', 'shoeSize
 const PHYSICAL_CATEGORICAL_FIELDS = ['hairColor', 'hairType', 'hairLength', 'eyeColor', 'bodyStructure', 'tattoo'] as const;
 
 // Fetch options for dropdowns
+export const getTalentCategoryCounts = async () => {
+  const [rows, totalResult] = await Promise.all([
+    prisma.$queryRawUnsafe<{ id: string; name: string; count: bigint }[]>(`
+      SELECT c.id, c.name, COUNT(tc.id)::int as count
+      FROM categories c
+      LEFT JOIN (
+        SELECT tc2."categoryId", tc2.id
+        FROM talent_categories tc2
+        JOIN talent_profiles tp2 ON tp2.id = tc2."talentProfileId"
+        JOIN users u2 ON u2.id = tp2."userId"
+          AND u2.role = 'TALENT' AND u2.status = 'ACTIVE' AND u2."profileCompleted" = true
+      ) tc ON tc."categoryId" = c.id
+      GROUP BY c.id, c.name
+      ORDER BY c.name ASC
+    `),
+    prisma.user.count({
+      where: { role: 'TALENT', status: 'ACTIVE', profileCompleted: true },
+    }),
+  ]);
+  return {
+    categories: rows.map(r => ({ id: r.id, name: r.name, count: Number(r.count) })),
+    total: totalResult,
+  };
+};
+
 export const getTalentFilterOptions = async () => {
   const [categories, countries, cities] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: 'asc' } }),
