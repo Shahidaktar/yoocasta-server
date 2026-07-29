@@ -874,20 +874,32 @@ export const uploadBlogImageService = async (file: Express.Multer.File) => {
 };
 
 const FILTER_OPTIONS_PATH = path.resolve(process.cwd(), '../frontend/public/static/filterOptions.json');
+const R2_FILTER_URL = 'https://pub-9a6daccdd56649a4bb690162026e4c5d.r2.dev/static/filterOptions.json';
 
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const getFilterOptionsData = async (): Promise<any> => {
+  try {
+    const raw = fs.readFileSync(FILTER_OPTIONS_PATH, 'utf-8');
+    return JSON.parse(raw.replace(/^\uFEFF/, ''));
+  } catch {}
+  try {
+    const res = await fetch(R2_FILTER_URL + '?t=' + Date.now());
+    if (res.ok) return await res.json();
+  } catch {}
+  return null;
+};
 
 const syncLanguagesToFilterOptions = async () => {
   if (syncTimeout) clearTimeout(syncTimeout);
   syncTimeout = setTimeout(async () => {
     try {
-      let raw = fs.readFileSync(FILTER_OPTIONS_PATH, 'utf-8');
-      raw = raw.replace(/^\uFEFF/, '');
-      const data = JSON.parse(raw);
+      const data = await getFilterOptionsData();
+      if (!data) { console.error('Cannot read filterOptions.json from any source'); return; }
       const languages = await prisma.language.findMany({ orderBy: { name: 'asc' } });
       data.languages = languages.map((l) => ({ id: l.id, name: l.name }));
       const json = JSON.stringify(data, null, 4);
-      fs.writeFileSync(FILTER_OPTIONS_PATH, json, 'utf-8');
+      try { fs.writeFileSync(FILTER_OPTIONS_PATH, json, 'utf-8'); } catch {}
       await r2Client.send(new PutObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME!,
         Key: 'static/filterOptions.json',
@@ -896,7 +908,7 @@ const syncLanguagesToFilterOptions = async () => {
       }));
       console.log('filterOptions.json synced');
     } catch (err) {
-      console.error('Failed to sync filterOptions.json to R2:', err);
+      console.error('Failed to sync filterOptions.json:', err);
     }
     syncTimeout = null;
   }, 2000);
