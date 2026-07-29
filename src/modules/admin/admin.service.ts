@@ -1,10 +1,13 @@
+import fs from 'fs';
+import path from 'path';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import prisma from '../../config/db';
 import { comparePassword } from '../../utils/hash';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { JwtPayload } from '../../utils/jwt';
 import { sendEmail, recruiterVerifiedEmailTemplate, jobApprovedTemplate, jobRejectedTemplate } from '../../config/email';
 import { CATEGORY_MAP } from '../blogs/blog.service';
-import { uploadToR2 } from '../../config/r2';
+import { uploadToR2, r2Client } from '../../config/r2';
 
 export const login = async (email: string, password: string) => {
   const admin = await prisma.admin.findUnique({ where: { email } });
@@ -868,4 +871,63 @@ export const deleteBlog = async (blogId: number) => {
 export const uploadBlogImageService = async (file: Express.Multer.File) => {
   const url = await uploadToR2(file.buffer, file.originalname, file.mimetype, 'blogs');
   return { url, message: 'Blog image uploaded successfully' };
+};
+
+const FILTER_OPTIONS_PATH = path.resolve(process.cwd(), '../frontend/public/static/filterOptions.json');
+
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const syncLanguagesToFilterOptions = async () => {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    try {
+      let raw = fs.readFileSync(FILTER_OPTIONS_PATH, 'utf-8');
+      raw = raw.replace(/^\uFEFF/, '');
+      const data = JSON.parse(raw);
+      const languages = await prisma.language.findMany({ orderBy: { name: 'asc' } });
+      data.languages = languages.map((l) => ({ id: l.id, name: l.name }));
+      const json = JSON.stringify(data, null, 4);
+      fs.writeFileSync(FILTER_OPTIONS_PATH, json, 'utf-8');
+      await r2Client.send(new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: 'static/filterOptions.json',
+        Body: json,
+        ContentType: 'application/json',
+      }));
+      console.log('filterOptions.json synced');
+    } catch (err) {
+      console.error('Failed to sync filterOptions.json to R2:', err);
+    }
+    syncTimeout = null;
+  }, 2000);
+};
+
+export const getLanguages = async (page: number, limit: number) => {
+  const skip = (page - 1) * limit;
+  const [languages, total] = await Promise.all([
+    prisma.language.findMany({ skip, take: limit, orderBy: { name: 'asc' } }),
+    prisma.language.count(),
+  ]);
+  return {
+    languages: languages.map((l) => ({ id: l.id, name: l.name })),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+export const createLanguage = async (name: string) => {
+  const language = await prisma.language.create({ data: { name } });
+  await syncLanguagesToFilterOptions();
+  return { id: language.id, name: language.name };
+};
+
+export const deleteLanguage = async (id: string) => {
+  await prisma.language.delete({ where: { id } });
+  await syncLanguagesToFilterOptions();
+  return { id };
+};
+
+export const updateLanguage = async (id: string, name: string) => {
+  const language = await prisma.language.update({ where: { id }, data: { name } });
+  await syncLanguagesToFilterOptions();
+  return { id: language.id, name: language.name };
 };

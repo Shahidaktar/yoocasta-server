@@ -29,5 +29,9 @@ router.post('/blogs', authenticate, authorize('ADMIN'), adminController.createBl
 router.put('/blogs/:id', authenticate, authorize('ADMIN'), adminController.updateBlog);
 router.post('/blogs/image', authenticate, authorize('ADMIN'), uploadBlogImage, adminController.uploadBlogImageHandler);
 router.delete('/blogs/:id', authenticate, authorize('ADMIN'), adminController.deleteBlog);
+router.get('/languages', authenticate, authorize('ADMIN'), adminController.getLanguages);
+router.post('/languages', authenticate, authorize('ADMIN'), adminController.createLanguage);
+router.put('/languages/:id', authenticate, authorize('ADMIN'), adminController.updateLanguage);
+router.delete('/languages/:id', authenticate, authorize('ADMIN'), adminController.deleteLanguage);
 
 export default router;

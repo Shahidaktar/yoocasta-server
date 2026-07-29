@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import fs from 'fs';
+import path from 'path';
 import authRoutes from './modules/auth/auth.routes';
 import profileRoutes from './modules/profile/profile.routes';
 import talentRoutes from './modules/talent/talent.routes';
@@ -66,6 +68,16 @@ app.use('/api/v1/contact', contactRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
 app.get('/api/v1/cast-bags/public/:token', castBagController.getPublic);
+
+app.get('/api/v1/filter-options', (req, res) => {
+  try {
+    const filterPath = path.join(__dirname, '../../frontend/public/static/filterOptions.json');
+    const data = fs.readFileSync(filterPath, 'utf-8');
+    res.json(JSON.parse(data));
+  } catch {
+    res.status(500).json({ error: 'Failed to load filter options' });
+  }
+});
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

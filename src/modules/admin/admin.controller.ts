@@ -266,3 +266,47 @@ export const uploadBlogImageHandler = async (req: Request, res: Response, next: 
     next(err);
   }
 };
+
+export const getLanguages = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await adminService.getLanguages(page, limit);
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createLanguage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.createLanguage(name);
+    return ApiResponse.success(res, result, 'Language created', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteLanguage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await adminService.deleteLanguage(id);
+    return ApiResponse.success(res, null, 'Language deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateLanguage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.updateLanguage(id, name);
+    return ApiResponse.success(res, result, 'Language updated');
+  } catch (err) {
+    next(err);
+  }
+};
