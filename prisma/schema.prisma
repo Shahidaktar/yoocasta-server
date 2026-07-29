@@ -562,7 +562,6 @@ model CastBagLink {
   @@map("cast_bag_links")
 }
 
-// NEW: Feedback system
 model CastBagFeedback {
   id              String @id @default(uuid())
   linkId          String
@@ -815,4 +814,14 @@ model Blog {
   blogImage             String? @map("blog_image")
 
   @@map("blogs")
+}
+
+model EmailTemplate {
+  id          String @id @default(uuid())
+  templateKey String @unique @map("template_key")
+  subject     String
+  body        String
+  description String @default("")
+
+  @@map("email_templates")
 }

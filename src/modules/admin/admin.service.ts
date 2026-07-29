@@ -255,7 +255,7 @@ export const getCompanies = async (page: number, limit: number, search?: string,
           select: { name: true, country: { select: { name: true } } },
         },
         companyProfile: {
-          select: { companyName: true, companyType: true, website: true, description: true, tradeLicense: true, tradeLicenseFile: true },
+          select: { companyName: true, companyType: true, website: true, description: true, tradeLicense: true, tradeLicenseFile: true, isInternalCompany: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -275,6 +275,7 @@ export const getCompanies = async (page: number, limit: number, search?: string,
     description: c.companyProfile?.description || null,
     tradeLicense: c.companyProfile?.tradeLicense || null,
     tradeLicenseFile: c.companyProfile?.tradeLicenseFile ? `${process.env.R2_PUBLIC_URL}/license/${c.companyProfile.tradeLicenseFile}` : null,
+    isInternalCompany: c.companyProfile?.isInternalCompany || false,
     profileCompleted: c.profileCompleted,
     isVerified: c.isVerified,
     status: c.status === 'ACTIVE' ? 'active' : 'inactive',
@@ -772,6 +773,16 @@ export const updateTalentStatus = async (talentId: string, status: 'ACTIVE' | 'I
   return { id: updated.id, status: updated.status === 'ACTIVE' ? 'active' : 'inactive' };
 };
 
+export const toggleInternalCompany = async (companyId: string) => {
+  const profile = await prisma.companyProfile.findUnique({ where: { userId: companyId } });
+  if (!profile) throw { statusCode: 404, message: 'Company profile not found' };
+  const updated = await prisma.companyProfile.update({
+    where: { userId: companyId },
+    data: { isInternalCompany: !profile.isInternalCompany },
+  });
+  return { userId: companyId, isInternalCompany: updated.isInternalCompany };
+};
+
 export const getAdminBlogs = async (page: number, limit: number) => {
   const skip = (page - 1) * limit;
 
@@ -942,4 +953,356 @@ export const updateLanguage = async (id: string, name: string) => {
   const language = await prisma.language.update({ where: { id }, data: { name } });
   await syncLanguagesToFilterOptions();
   return { id: language.id, name: language.name };
+};
+
+const syncNationalitiesToFilterOptions = async () => {
+  try {
+    const data = await getFilterOptionsData();
+    if (!data) return;
+    const nationalities = await prisma.nationality.findMany({ orderBy: { name: 'asc' } });
+    data.nationalities = nationalities.map((n) => ({ id: n.id, name: n.name }));
+    const json = JSON.stringify(data, null, 4);
+    try { fs.writeFileSync(FILTER_OPTIONS_PATH, json, 'utf-8'); } catch {}
+    await r2Client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: 'static/filterOptions.json',
+      Body: json,
+      ContentType: 'application/json',
+    }));
+  } catch (err) {
+    console.error('Failed to sync nationalities:', err);
+  }
+};
+
+export const getNationalities = async (page: number, limit: number) => {
+  const skip = (page - 1) * limit;
+  const [nationalities, total] = await Promise.all([
+    prisma.nationality.findMany({ skip, take: limit, orderBy: { name: 'asc' } }),
+    prisma.nationality.count(),
+  ]);
+  return {
+    nationalities: nationalities.map((n) => ({ id: n.id, name: n.name })),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+export const createNationality = async (name: string) => {
+  const nationality = await prisma.nationality.create({ data: { name } });
+  await syncNationalitiesToFilterOptions();
+  return { id: nationality.id, name: nationality.name };
+};
+
+export const updateNationality = async (id: string, name: string) => {
+  const nationality = await prisma.nationality.update({ where: { id }, data: { name } });
+  await syncNationalitiesToFilterOptions();
+  return { id: nationality.id, name: nationality.name };
+};
+
+export const deleteNationality = async (id: string) => {
+  await prisma.nationality.delete({ where: { id } });
+  await syncNationalitiesToFilterOptions();
+  return { id };
+};
+
+const syncEthnicitiesToFilterOptions = async () => {
+  try {
+    const data = await getFilterOptionsData();
+    if (!data) return;
+    const ethnicities = await prisma.ethnicity.findMany({ orderBy: { name: 'asc' } });
+    data.ethnicities = ethnicities.map((e) => ({ id: e.id, name: e.name }));
+    const json = JSON.stringify(data, null, 4);
+    try { fs.writeFileSync(FILTER_OPTIONS_PATH, json, 'utf-8'); } catch {}
+    await r2Client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: 'static/filterOptions.json',
+      Body: json,
+      ContentType: 'application/json',
+    }));
+  } catch (err) {
+    console.error('Failed to sync ethnicities:', err);
+  }
+};
+
+export const getEthnicities = async (page: number, limit: number) => {
+  const skip = (page - 1) * limit;
+  const [ethnicities, total] = await Promise.all([
+    prisma.ethnicity.findMany({ skip, take: limit, orderBy: { name: 'asc' } }),
+    prisma.ethnicity.count(),
+  ]);
+  return {
+    ethnicities: ethnicities.map((e) => ({ id: e.id, name: e.name })),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+export const createEthnicity = async (name: string) => {
+  const ethnicity = await prisma.ethnicity.create({ data: { name } });
+  await syncEthnicitiesToFilterOptions();
+  return { id: ethnicity.id, name: ethnicity.name };
+};
+
+export const updateEthnicity = async (id: string, name: string) => {
+  const ethnicity = await prisma.ethnicity.update({ where: { id }, data: { name } });
+  await syncEthnicitiesToFilterOptions();
+  return { id: ethnicity.id, name: ethnicity.name };
+};
+
+export const deleteEthnicity = async (id: string) => {
+  await prisma.ethnicity.delete({ where: { id } });
+  await syncEthnicitiesToFilterOptions();
+  return { id };
+};
+
+const syncCategoriesToFilterOptions = async () => {
+  try {
+    const data = await getFilterOptionsData();
+    if (!data) return;
+    const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
+    data.categories = categories.map((c) => ({ id: c.id, name: c.name }));
+    const json = JSON.stringify(data, null, 4);
+    try { fs.writeFileSync(FILTER_OPTIONS_PATH, json, 'utf-8'); } catch {}
+    await r2Client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: 'static/filterOptions.json',
+      Body: json,
+      ContentType: 'application/json',
+    }));
+  } catch (err) {
+    console.error('Failed to sync categories:', err);
+  }
+};
+
+export const getCategories = async (page: number, limit: number) => {
+  const skip = (page - 1) * limit;
+  const [categories, total] = await Promise.all([
+    prisma.category.findMany({ skip, take: limit, orderBy: { name: 'asc' } }),
+    prisma.category.count(),
+  ]);
+  return {
+    categories: categories.map((c) => ({ id: c.id, name: c.name })),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+export const createCategory = async (name: string) => {
+  const category = await prisma.category.create({ data: { name } });
+  await syncCategoriesToFilterOptions();
+  return { id: category.id, name: category.name };
+};
+
+export const updateCategory = async (id: string, name: string) => {
+  const category = await prisma.category.update({ where: { id }, data: { name } });
+  await syncCategoriesToFilterOptions();
+  return { id: category.id, name: category.name };
+};
+
+export const deleteCategory = async (id: string) => {
+  await prisma.category.delete({ where: { id } });
+  await syncCategoriesToFilterOptions();
+  return { id };
+};
+
+const syncCitiesToFilterOptions = async () => {
+  try {
+    const data = await getFilterOptionsData();
+    if (!data) return;
+    const [cities, countries] = await Promise.all([
+      prisma.city.findMany({ orderBy: { name: 'asc' } }),
+      prisma.country.findMany({ orderBy: { name: 'asc' } }),
+    ]);
+    data.cities = cities.map((c) => ({ id: c.id, name: c.name, countryId: c.countryId }));
+    data.countries = countries.map((c) => ({ id: c.id, name: c.name }));
+    const json = JSON.stringify(data, null, 4);
+    try { fs.writeFileSync(FILTER_OPTIONS_PATH, json, 'utf-8'); } catch {}
+    await r2Client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: 'static/filterOptions.json',
+      Body: json,
+      ContentType: 'application/json',
+    }));
+  } catch (err) {
+    console.error('Failed to sync cities:', err);
+  }
+};
+
+export const getCities = async (page: number, limit: number, countryId?: string) => {
+  const skip = (page - 1) * limit;
+  const where = countryId ? { countryId } : {};
+  const [cities, total] = await Promise.all([
+    prisma.city.findMany({ where, skip, take: limit, orderBy: { name: 'asc' }, include: { country: true } }),
+    prisma.city.count({ where }),
+  ]);
+  return {
+    cities: cities.map((c) => ({ id: c.id, name: c.name, countryId: c.countryId, country: c.country?.name || '' })),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+export const getAllCountries = async () => {
+  const countries = await prisma.country.findMany({ orderBy: { name: 'asc' } });
+  return countries.map((c) => ({ id: c.id, name: c.name }));
+};
+
+export const createCity = async (data: { name: string; countryId: string | null }) => {
+  const city = await prisma.city.create({ data: { name: data.name, countryId: data.countryId } });
+  await syncCitiesToFilterOptions();
+  return { id: city.id, name: city.name, countryId: city.countryId };
+};
+
+export const updateCity = async (id: string, data: { name: string; countryId: string | null }) => {
+  const city = await prisma.city.update({ where: { id }, data: { name: data.name, countryId: data.countryId } });
+  await syncCitiesToFilterOptions();
+  return { id: city.id, name: city.name, countryId: city.countryId };
+};
+
+export const deleteCity = async (id: string) => {
+  await prisma.city.delete({ where: { id } });
+  await syncCitiesToFilterOptions();
+  return { id };
+};
+
+export const getCountries = async (page: number, limit: number) => {
+  const skip = (page - 1) * limit;
+  const [countries, total] = await Promise.all([
+    prisma.country.findMany({ skip, take: limit, orderBy: { name: 'asc' } }),
+    prisma.country.count(),
+  ]);
+  return {
+    countries: countries.map((c) => ({ id: c.id, name: c.name })),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+export const createCountry = async (name: string) => {
+  const country = await prisma.country.create({ data: { name } });
+  await syncCitiesToFilterOptions();
+  return { id: country.id, name: country.name };
+};
+
+export const updateCountry = async (id: string, name: string) => {
+  const country = await prisma.country.update({ where: { id }, data: { name } });
+  await syncCitiesToFilterOptions();
+  return { id: country.id, name: country.name };
+};
+
+export const deleteCountry = async (id: string) => {
+  await prisma.country.delete({ where: { id } });
+  await syncCitiesToFilterOptions();
+  return { id };
+};
+
+const DEFAULT_TEMPLATES = [
+  {
+    templateKey: 'verify_email',
+    subject: 'Verify your email address',
+    description: 'Sent to new users for email verification. Available variables: {{name}}, {{verifyUrl}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Welcome, {{name}}!</h2><p>Please verify your email by clicking the link below:</p><a href="{{verifyUrl}}" style="display:inline-block;padding:12px 24px;background:#3835A4;color:#fff;text-decoration:none;border-radius:6px">Verify Email</a><p>If you didn't request this, ignore this email.</p></body></html>`,
+  },
+  {
+    templateKey: 'otp_email',
+    subject: 'Password Reset OTP',
+    description: 'Sent for password reset. Variables: {{name}}, {{otp}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Hi {{name}}!</h2><p>Your OTP for password reset is:</p><h1 style="letter-spacing:8px;font-size:32px;color:#C6007E">{{otp}}</h1><p>This OTP expires in 10 minutes.</p></body></html>`,
+  },
+  {
+    templateKey: 'welcome_talent',
+    subject: 'Welcome to Yoocasta!',
+    description: 'Sent after talent registration. Variables: {{name}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Welcome, {{name}}!</h2><p>Thank you for joining Yoocasta. Complete your profile to start applying for roles.</p><a href="{{loginUrl}}" style="display:inline-block;padding:12px 24px;background:#C6007E;color:#fff;text-decoration:none;border-radius:6px">Get Started</a></body></html>`,
+  },
+  {
+    templateKey: 'welcome_recruiter',
+    subject: 'Welcome to Yoocasta – Recruiter Account',
+    description: 'Sent after recruiter registration. Variables: {{name}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Welcome, {{name}}!</h2><p>Your recruiter account is pending verification. You will be notified once verified.</p><a href="{{loginUrl}}" style="display:inline-block;padding:12px 24px;background:#C6007E;color:#fff;text-decoration:none;border-radius:6px">Login</a></body></html>`,
+  },
+  {
+    templateKey: 'recruiter_verified',
+    subject: 'Your Company Account Has Been Verified',
+    description: 'Sent when admin verifies a recruiter. Variables: {{companyName}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Congratulations, {{companyName}}!</h2><p>Your company account has been verified. You can now post jobs and find talent.</p></body></html>`,
+  },
+  {
+    templateKey: 'job_under_review',
+    subject: 'Your Job Posting Is Under Review',
+    description: 'Sent when a job is submitted for review. Variables: {{name}}, {{jobTitle}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Hi {{name}}!</h2><p>Your job <strong>{{jobTitle}}</strong> has been submitted and is under review.</p><p>You will be notified once it is approved.</p></body></html>`,
+  },
+  {
+    templateKey: 'job_approved',
+    subject: 'Your Job Has Been Approved',
+    description: 'Sent when a job is approved by admin. Variables: {{name}}, {{jobTitle}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Great news, {{name}}!</h2><p>Your job <strong>{{jobTitle}}</strong> has been approved and is now live.</p></body></html>`,
+  },
+  {
+    templateKey: 'job_rejected',
+    subject: 'Your Job Posting Status',
+    description: 'Sent when a job is rejected by admin. Variables: {{name}}, {{jobTitle}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Hi {{name}}!</h2><p>Your job <strong>{{jobTitle}}</strong> was not approved. Please review and resubmit.</p></body></html>`,
+  },
+  {
+    templateKey: 'application_confirmation',
+    subject: 'Application Submitted Successfully',
+    description: 'Sent to talent after applying. Variables: {{name}}, {{jobTitle}}, {{roleTitle}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Hi {{name}}!</h2><p>Your application for <strong>{{roleTitle}}</strong> at <strong>{{jobTitle}}</strong> has been submitted.</p><p>We wish you the best of luck!</p></body></html>`,
+  },
+  {
+    templateKey: 'new_application_notification',
+    subject: 'New Application Received',
+    description: 'Sent to company when someone applies. Variables: {{companyName}}, {{talentName}}, {{jobTitle}}, {{roleTitle}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>Hi {{companyName}}!</h2><p><strong>{{talentName}}</strong> has applied for <strong>{{roleTitle}}</strong> on <strong>{{jobTitle}}</strong>.</p><a href="{{dashboardUrl}}" style="display:inline-block;padding:12px 24px;background:#3835A4;color:#fff;text-decoration:none;border-radius:6px">View Application</a></body></html>`,
+  },
+  {
+    templateKey: 'admin_new_talent',
+    subject: 'New Talent Registration',
+    description: 'Admin notification when a talent registers. Variables: {{name}}, {{email}}, {{phone}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>New Talent Registration</h2><p><strong>{{name}}</strong> ({{email}}, {{phone}}) has registered.</p></body></html>`,
+  },
+  {
+    templateKey: 'admin_new_recruiter',
+    subject: 'New Recruiter Registration',
+    description: 'Admin notification when a recruiter registers. Variables: {{recruiterName}}, {{companyName}}, {{recruiterEmail}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>New Recruiter Registration</h2><p><strong>{{recruiterName}}</strong> from <strong>{{companyName}}</strong> ({{recruiterEmail}}) has registered.</p></body></html>`,
+  },
+  {
+    templateKey: 'admin_new_job',
+    subject: 'New Job Posted for Review',
+    description: 'Admin notification when a job is posted. Variables: {{companyName}}, {{jobTitle}}, {{jobId}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>New Job Posted</h2><p><strong>{{companyName}}</strong> posted <strong>{{jobTitle}}</strong>.</p><a href="{{reviewUrl}}" style="display:inline-block;padding:12px 24px;background:#3835A4;color:#fff;text-decoration:none;border-radius:6px">Review Job</a></body></html>`,
+  },
+  {
+    templateKey: 'talent_invitation',
+    subject: 'You Have Been Invited to Apply',
+    description: 'Sent to talent when a recruiter invites them. Variables: {{companyName}}, {{jobTitle}}, {{inviteUrl}}',
+    body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;padding:40px"><h2>You're Invited!</h2><p><strong>{{companyName}}</strong> has invited you to apply for <strong>{{jobTitle}}</strong>.</p><a href="{{inviteUrl}}" style="display:inline-block;padding:12px 24px;background:#C6007E;color:#fff;text-decoration:none;border-radius:6px">View Job & Apply</a></body></html>`,
+  },
+];
+
+const ensureEmailTemplates = async () => {
+  const count = await prisma.emailTemplate.count();
+  if (count > 0) return;
+  for (const tpl of DEFAULT_TEMPLATES) {
+    await prisma.emailTemplate.create({ data: tpl }).catch(() => {});
+  }
+};
+
+export const getEmailTemplates = async () => {
+  await ensureEmailTemplates();
+  return prisma.emailTemplate.findMany({ orderBy: { templateKey: 'asc' } });
+};
+
+export const getEmailTemplateByKey = async (key: string) => {
+  await ensureEmailTemplates();
+  const tpl = await prisma.emailTemplate.findUnique({ where: { templateKey: key } });
+  if (!tpl) throw { statusCode: 404, message: 'Template not found' };
+  return tpl;
+};
+
+export const updateEmailTemplate = async (key: string, data: { subject: string; body: string }) => {
+  await ensureEmailTemplates();
+  const tpl = await prisma.emailTemplate.update({
+    where: { templateKey: key },
+    data: { subject: data.subject, body: data.body },
+  });
+  return tpl;
 };

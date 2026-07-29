@@ -211,6 +211,16 @@ export const updateTalentStatus = async (req: Request, res: Response, next: Next
   }
 };
 
+export const toggleInternalCompany = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const result = await adminService.toggleInternalCompany(id);
+    return ApiResponse.success(res, result, 'Internal status toggled');
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getAdminBlogs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -306,6 +316,265 @@ export const updateLanguage = async (req: Request, res: Response, next: NextFunc
     if (!name) return ApiResponse.error(res, 'Name is required', 400);
     const result = await adminService.updateLanguage(id, name);
     return ApiResponse.success(res, result, 'Language updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getNationalities = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await adminService.getNationalities(page, limit);
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createNationality = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.createNationality(name);
+    return ApiResponse.success(res, result, 'Nationality created', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateNationality = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.updateNationality(id, name);
+    return ApiResponse.success(res, result, 'Nationality updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteNationality = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await adminService.deleteNationality(id);
+    return ApiResponse.success(res, null, 'Nationality deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getEthnicities = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await adminService.getEthnicities(page, limit);
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createEthnicity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.createEthnicity(name);
+    return ApiResponse.success(res, result, 'Ethnicity created', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateEthnicity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.updateEthnicity(id, name);
+    return ApiResponse.success(res, result, 'Ethnicity updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteEthnicity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await adminService.deleteEthnicity(id);
+    return ApiResponse.success(res, null, 'Ethnicity deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCategories = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await adminService.getCategories(page, limit);
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.createCategory(name);
+    return ApiResponse.success(res, result, 'Category created', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.updateCategory(id, name);
+    return ApiResponse.success(res, result, 'Category updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await adminService.deleteCategory(id);
+    return ApiResponse.success(res, null, 'Category deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCities = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const countryId = req.query.countryId as string | undefined;
+    const result = await adminService.getCities(page, limit, countryId);
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getAllCountries = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await adminService.getAllCountries();
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createCity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, countryId } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.createCity({ name, countryId: countryId || null });
+    return ApiResponse.success(res, result, 'City created', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateCity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { name, countryId } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.updateCity(id, { name, countryId: countryId || null });
+    return ApiResponse.success(res, result, 'City updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteCity = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await adminService.deleteCity(id);
+    return ApiResponse.success(res, null, 'City deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCountries = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await adminService.getCountries(page, limit);
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createCountry = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.createCountry(name);
+    return ApiResponse.success(res, result, 'Country created', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateCountry = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { name } = req.body;
+    if (!name) return ApiResponse.error(res, 'Name is required', 400);
+    const result = await adminService.updateCountry(id, name);
+    return ApiResponse.success(res, result, 'Country updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteCountry = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await adminService.deleteCountry(id);
+    return ApiResponse.success(res, null, 'Country deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getEmailTemplates = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await adminService.getEmailTemplates();
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getEmailTemplateByKey = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await adminService.getEmailTemplateByKey(req.params.key as string);
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateEmailTemplate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { subject, body } = req.body;
+    if (!subject || !body) return ApiResponse.error(res, 'Subject and body are required', 400);
+    const result = await adminService.updateEmailTemplate(req.params.key as string, { subject, body });
+    return ApiResponse.success(res, result, 'Template updated');
   } catch (err) {
     next(err);
   }

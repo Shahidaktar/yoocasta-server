@@ -67,7 +67,7 @@ export const shareCastBag = async (userId: string, bagId: string, emails: string
 
   const publicUrl = `${FRONTEND_URL}/cast-bag/${token}`;
 
-  const emailPromises = emails.map(email =>
+   const emailPromises = emails.map(email =>
     sendEmail(
       email,
       `Cast Bag: ${bag.name} — Yoocasta`,
@@ -82,8 +82,9 @@ export const shareCastBag = async (userId: string, bagId: string, emails: string
         <p style="color:#666;font-size:12px;">This link expires on ${expiresAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
       </div>
       `
-    ).catch(err => console.error(`Failed to email ${email}:`, err))
+      ).catch(err => console.error(`Failed to email ${email}:`, err))
   );
+
 
   await Promise.allSettled(emailPromises);
   return { message: `Cast bag shared with ${emails.length} recipient(s)` };

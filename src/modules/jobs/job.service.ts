@@ -356,6 +356,7 @@ export const updateJob = async (userId: string, jobId: string, data: any) => {
       lastDateToApply: data.lastDateToApply ? new Date(data.lastDateToApply) : null,
       shootingCityId: data.shootingCityId || null,
       shootingDates: data.shootingDates ? JSON.stringify(data.shootingDates) : null,
+      status: 'PENDING',
     },
     include: { roles: true }
   });

@@ -63,6 +63,7 @@ export const getPublicProfile = async (params: GetPublicProfileParams) => {
     isVerified: user.isVerified,
     nationality: user.nationality,
     subscription: user.subscription,
+    ...(showContacts ? { email: user.email, phone: user.phone } : { email: null, phone: null }),
     talentProfile: {
       ...user.talentProfile,
       views: updatedProfile.views, // correct, updated count

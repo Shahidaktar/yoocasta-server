@@ -22,6 +22,7 @@ router.put('/jobs/:id', authenticate, authorize('ADMIN'), adminController.adminU
 router.put('/jobs/:jobId/roles/:roleId', authenticate, authorize('ADMIN'), adminController.adminUpdateRole);
 router.patch('/jobs/:id/status', authenticate, authorize('ADMIN'), adminController.updateJobStatus);
 router.patch('/talents/:id/status', authenticate, authorize('ADMIN'), adminController.updateTalentStatus);
+router.post('/companies/:id/toggle-internal', authenticate, authorize('ADMIN'), adminController.toggleInternalCompany);
 router.get('/talents/:id/subscription', authenticate, authorize('ADMIN'), adminController.getTalentSubscriptionDetails);
 router.post('/talents/:id/login', authenticate, authorize('ADMIN'), adminController.loginAsTalent);
 router.get('/blogs', authenticate, authorize('ADMIN'), adminController.getAdminBlogs);
@@ -33,5 +34,29 @@ router.get('/languages', authenticate, authorize('ADMIN'), adminController.getLa
 router.post('/languages', authenticate, authorize('ADMIN'), adminController.createLanguage);
 router.put('/languages/:id', authenticate, authorize('ADMIN'), adminController.updateLanguage);
 router.delete('/languages/:id', authenticate, authorize('ADMIN'), adminController.deleteLanguage);
+router.get('/nationalities', authenticate, authorize('ADMIN'), adminController.getNationalities);
+router.post('/nationalities', authenticate, authorize('ADMIN'), adminController.createNationality);
+router.put('/nationalities/:id', authenticate, authorize('ADMIN'), adminController.updateNationality);
+router.delete('/nationalities/:id', authenticate, authorize('ADMIN'), adminController.deleteNationality);
+router.get('/ethnicities', authenticate, authorize('ADMIN'), adminController.getEthnicities);
+router.post('/ethnicities', authenticate, authorize('ADMIN'), adminController.createEthnicity);
+router.put('/ethnicities/:id', authenticate, authorize('ADMIN'), adminController.updateEthnicity);
+router.delete('/ethnicities/:id', authenticate, authorize('ADMIN'), adminController.deleteEthnicity);
+router.get('/categories', authenticate, authorize('ADMIN'), adminController.getCategories);
+router.post('/categories', authenticate, authorize('ADMIN'), adminController.createCategory);
+router.put('/categories/:id', authenticate, authorize('ADMIN'), adminController.updateCategory);
+router.delete('/categories/:id', authenticate, authorize('ADMIN'), adminController.deleteCategory);
+router.get('/cities', authenticate, authorize('ADMIN'), adminController.getCities);
+router.get('/countries/all', authenticate, authorize('ADMIN'), adminController.getAllCountries);
+router.post('/cities', authenticate, authorize('ADMIN'), adminController.createCity);
+router.put('/cities/:id', authenticate, authorize('ADMIN'), adminController.updateCity);
+router.delete('/cities/:id', authenticate, authorize('ADMIN'), adminController.deleteCity);
+router.get('/countries', authenticate, authorize('ADMIN'), adminController.getCountries);
+router.post('/countries', authenticate, authorize('ADMIN'), adminController.createCountry);
+router.put('/countries/:id', authenticate, authorize('ADMIN'), adminController.updateCountry);
+router.delete('/countries/:id', authenticate, authorize('ADMIN'), adminController.deleteCountry);
+router.get('/email-templates', authenticate, authorize('ADMIN'), adminController.getEmailTemplates);
+router.get('/email-templates/:key', authenticate, authorize('ADMIN'), adminController.getEmailTemplateByKey);
+router.put('/email-templates/:key', authenticate, authorize('ADMIN'), adminController.updateEmailTemplate);
 
 export default router;
