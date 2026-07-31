@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/auth.middleware';
 import { authorize } from '../../middleware/rbac.middleware';
+import { uploadJobImage } from '../../middleware/upload.middleware';
 import {
   createJob,
   getMyJobs,
@@ -14,6 +15,7 @@ import {
   getPublicJobById,
   getPublicJobs,
   getCountries,
+  uploadJobImageHandler,
 } from './job.controller';
 
 const router = Router();
@@ -32,6 +34,7 @@ router.get('/my-jobs', authorize('RECRUITER'), getMyJobs);
 router.get('/:jobId', getJobById);
 router.put('/:jobId', authorize('RECRUITER'), updateJob);
 router.delete('/:jobId', authorize('RECRUITER'), deleteJob);
+router.post('/image', authorize('RECRUITER'), uploadJobImage, uploadJobImageHandler);
 
 // Role CRUD
 router.post('/:jobId/roles', authorize('RECRUITER'), addRole);

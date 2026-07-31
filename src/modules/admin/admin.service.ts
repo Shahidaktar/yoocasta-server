@@ -453,6 +453,7 @@ export const adminCreateJob = async (companyId: string, data: any) => {
       lastDateToApply: data.lastDateToApply ? new Date(data.lastDateToApply) : null,
       shootingCityId: data.shootingCityId || null,
       shootingDates: data.shootingDates ? JSON.stringify(data.shootingDates) : null,
+      image: data.image || null,
       status: 'APPROVED',
     },
     include: { roles: true },
@@ -668,6 +669,7 @@ export const adminUpdateJob = async (jobId: string, data: any) => {
       lastDateToApply: data.lastDateToApply ? new Date(data.lastDateToApply) : job.lastDateToApply,
       shootingCityId: data.shootingCityId ?? job.shootingCityId,
       shootingDates: data.shootingDates ? JSON.stringify(data.shootingDates) : job.shootingDates,
+      image: data.image ?? job.image,
     },
     include: { roles: true },
   });
@@ -882,6 +884,11 @@ export const deleteBlog = async (blogId: number) => {
 export const uploadBlogImageService = async (file: Express.Multer.File) => {
   const url = await uploadToR2(file.buffer, file.originalname, file.mimetype, 'blogs');
   return { url, message: 'Blog image uploaded successfully' };
+};
+
+export const uploadJobImageService = async (file: Express.Multer.File) => {
+  const url = await uploadToR2(file.buffer, file.originalname, file.mimetype, 'job_images');
+  return { url, message: 'Job image uploaded successfully' };
 };
 
 const FILTER_OPTIONS_PATH = path.resolve(process.cwd(), '../frontend/public/static/filterOptions.json');

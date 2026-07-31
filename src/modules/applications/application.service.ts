@@ -167,6 +167,7 @@ export const getShortlistedForRole = async (userId: string, roleId: string) => {
       title: role.job.title,
       subTitle: role.job.subTitle,
       category: role.job.category,
+      image: role.job.image || null,
       companyName: role.job.company.companyName,
     },
     totalShortlisted: shortlisted.length,
@@ -275,6 +276,7 @@ export const getJobApplications = async (userId: string, jobId: string) => {
       subTitle: job.subTitle,
       description: job.description,
       category: job.category,
+      image: job.image || null,
       companyName: company.companyName,
       location: job.castingCity ? `${job.castingCity.name}${job.castingCity.country ? `, ${job.castingCity.country.name}` : ''}` : null,
       roles: job.roles.map(r => ({

@@ -31,8 +31,7 @@ export const getCountries = async (req: AuthRequest, res: Response, next: NextFu
     const countries = await prisma.country.findMany({
       orderBy: { name: 'asc' },
       select: { id: true, name: true, phoneCode: true },
-    });
-    ApiResponse.success(res, countries, 'Countries fetched');
+    });    ApiResponse.success(res, countries, 'Countries fetched');
   } catch (err) { next(err); }
 };
 
@@ -97,5 +96,13 @@ export const deleteRole = async (req: AuthRequest, res: Response, next: NextFunc
     const roleId = req.params.roleId as string;
     const result = await jobService.deleteRole(req.user!.userId, jobId, roleId);
     ApiResponse.success(res, result, result.message);
+  } catch (err) { next(err); }
+};
+
+export const uploadJobImageHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) return ApiResponse.error(res, 'No file uploaded', 400);
+    const result = await jobService.uploadJobImageService(req.file);
+    ApiResponse.success(res, result, 'Image uploaded', 201);
   } catch (err) { next(err); }
 };

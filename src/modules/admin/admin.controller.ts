@@ -277,6 +277,16 @@ export const uploadBlogImageHandler = async (req: Request, res: Response, next: 
   }
 };
 
+export const uploadJobImageHandler = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) return ApiResponse.error(res, 'No file uploaded', 400);
+    const result = await adminService.uploadJobImageService(req.file);
+    return ApiResponse.success(res, result, 'Image uploaded', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getLanguages = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const page = parseInt(req.query.page as string) || 1;

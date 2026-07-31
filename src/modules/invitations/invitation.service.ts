@@ -153,7 +153,7 @@ export const getMyInvitations = async (talentUserId: string, filters: any) => {
   return invitations.map(inv => ({
     ...inv.job,
     image: inv.job.image
-      ? `${process.env.R2_PUBLIC_URL}/jobs/${inv.job.image}`
+      ? (inv.job.image.startsWith('http') ? inv.job.image : `${process.env.R2_PUBLIC_URL}/jobs/${inv.job.image}`)
       : null,
     invitedAt: inv.createdAt,
   }));
@@ -221,7 +221,7 @@ export const getPublicJobInvitation = async (jobId: string) => {
       id: job.id,
       title: job.title,
       description: job.description,
-      image: job.image ? `${R2_BASE}/jobs/${job.image}` : null,
+      image: job.image ? (job.image.startsWith('http') ? job.image : `${R2_BASE}/jobs/${job.image}`) : null,
       category: job.category?.name || null,
       companyName: job.company?.companyName || null,
       companyLogo: job.company?.logo ? `${R2_BASE}/profile/${job.company.logo}` : null,

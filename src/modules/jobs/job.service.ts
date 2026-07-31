@@ -1,9 +1,9 @@
 import prisma from '../../config/db';
-import { sendEmail, jobUnderReviewTemplate, adminNewJobNotificationTemplate } from '../../config/email';
+import { uploadToR2 } from '../../config/r2';
+import { sendEmail, jobApprovedTemplate, jobRejectedTemplate, jobUnderReviewTemplate, adminNewJobNotificationTemplate } from '../../config/email';
 
 // ─── Form Options ──────────────────────────────────────────────
-export const getFormOptions = async () => {
-  const [categories, projectTypes, countries, cities, languages, dialects, ethnicities, nationalities] = await Promise.all([
+export const getFormOptions = async () => {  const [categories, projectTypes, countries, cities, languages, dialects, ethnicities, nationalities] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: 'asc' } }),
     prisma.projectType.findMany({ orderBy: { name: 'asc' } }),
     prisma.country.findMany({ orderBy: { name: 'asc' } }),
@@ -157,6 +157,11 @@ const getCompanyProfile = async (userId: string) => {
   return company;
 };
 
+export const uploadJobImageService = async (file: Express.Multer.File) => {
+  const url = await uploadToR2(file.buffer, file.originalname, file.mimetype, 'job_images');
+  return { url, message: 'Job image uploaded successfully' };
+};
+
 // ─── Create Job (Step 1) ───────────────────────────────────────
 export const createJob = async (userId: string, data: any) => {
   const company = await getCompanyProfile(userId);
@@ -177,6 +182,7 @@ export const createJob = async (userId: string, data: any) => {
       lastDateToApply: data.lastDateToApply ? new Date(data.lastDateToApply) : null,
       shootingCityId: data.shootingCityId || null,
       shootingDates: data.shootingDates ? JSON.stringify(data.shootingDates) : null,
+      image: data.image || null,
       status: 'PENDING',
     },
     include: { roles: true }
@@ -356,6 +362,7 @@ export const updateJob = async (userId: string, jobId: string, data: any) => {
       lastDateToApply: data.lastDateToApply ? new Date(data.lastDateToApply) : null,
       shootingCityId: data.shootingCityId || null,
       shootingDates: data.shootingDates ? JSON.stringify(data.shootingDates) : null,
+      image: data.image || null,
       status: 'PENDING',
     },
     include: { roles: true }

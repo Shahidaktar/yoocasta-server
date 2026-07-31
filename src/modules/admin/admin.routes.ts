@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as adminController from './admin.controller';
 import { authenticate } from '../../middleware/auth.middleware';
 import { authorize } from '../../middleware/rbac.middleware';
-import { uploadBlogImage } from '../../middleware/upload.middleware';
+import { uploadBlogImage, uploadJobImage } from '../../middleware/upload.middleware';
 
 const router = Router();
 
@@ -29,6 +29,7 @@ router.get('/blogs', authenticate, authorize('ADMIN'), adminController.getAdminB
 router.post('/blogs', authenticate, authorize('ADMIN'), adminController.createBlog);
 router.put('/blogs/:id', authenticate, authorize('ADMIN'), adminController.updateBlog);
 router.post('/blogs/image', authenticate, authorize('ADMIN'), uploadBlogImage, adminController.uploadBlogImageHandler);
+router.post('/jobs/image', authenticate, authorize('ADMIN'), uploadJobImage, adminController.uploadJobImageHandler);
 router.delete('/blogs/:id', authenticate, authorize('ADMIN'), adminController.deleteBlog);
 router.get('/languages', authenticate, authorize('ADMIN'), adminController.getLanguages);
 router.post('/languages', authenticate, authorize('ADMIN'), adminController.createLanguage);
