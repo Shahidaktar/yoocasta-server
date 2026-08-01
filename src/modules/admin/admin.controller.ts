@@ -15,6 +15,59 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
+export const getSubAdmins = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await adminService.getSubAdmins();
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createSubAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await adminService.createSubAdmin(req.body);
+    return ApiResponse.success(res, result, 'Sub admin created');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateSubAdminPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { newPassword } = req.body;
+    if (!newPassword) {
+      return ApiResponse.error(res, 'New password is required', 400);
+    }
+    const result = await adminService.updateSubAdminPassword(id, newPassword);
+    return ApiResponse.success(res, result, 'Password updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateSubAdminPermissions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { permissions } = req.body;
+    const result = await adminService.updateSubAdminPermissions(id, Array.isArray(permissions) ? permissions : []);
+    return ApiResponse.success(res, result, 'Permissions updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteSubAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const result = await adminService.deleteSubAdmin(id);
+    return ApiResponse.success(res, result, 'Sub admin deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getTalents = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -46,6 +99,16 @@ export const getTalentSubscriptionDetails = async (req: Request, res: Response, 
     const id = req.params.id as string;
     const result = await adminService.getTalentSubscriptionDetails(id);
     return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateTalentSubscription = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const result = await adminService.updateTalentSubscription(id, req.body);
+    return ApiResponse.success(res, result, 'Subscription updated');
   } catch (err) {
     next(err);
   }

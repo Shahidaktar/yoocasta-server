@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import prisma from '../../config/db';
-import { comparePassword } from '../../utils/hash';
+import { comparePassword, hashPassword } from '../../utils/hash';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { JwtPayload } from '../../utils/jwt';
 import { sendEmail, recruiterVerifiedEmailTemplate, jobApprovedTemplate, jobRejectedTemplate } from '../../config/email';
@@ -16,14 +16,89 @@ export const login = async (email: string, password: string) => {
   const isMatch = await comparePassword(password, admin.password);
   if (!isMatch) throw { statusCode: 401, message: 'Invalid email or password' };
 
-  const accessToken = generateAccessToken({ userId: admin.id, email: admin.email, role: 'ADMIN' });
-  const refreshToken = generateRefreshToken({ userId: admin.id, email: admin.email, role: 'ADMIN' });
+  const adminRole = admin.role || 'SUPER_ADMIN';
+  const permissions = admin.permissions || [];
+
+  const accessToken = generateAccessToken({ userId: admin.id, email: admin.email, role: 'ADMIN', adminRole, permissions });
+  const refreshToken = generateRefreshToken({ userId: admin.id, email: admin.email, role: 'ADMIN', adminRole, permissions });
 
   return {
-    user: { id: admin.id, email: admin.email, name: admin.name, role: 'ADMIN' },
+    user: { id: admin.id, email: admin.email, name: admin.name, role: 'ADMIN', adminRole, permissions },
     accessToken,
     refreshToken,
   };
+};
+
+export const getSubAdmins = async () => {
+  const admins = await prisma.admin.findMany({
+    where: { role: 'SUB_ADMIN' },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      permissions: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return admins;
+};
+
+export const createSubAdmin = async (data: { email: string; name?: string; password: string; permissions: string[] }) => {
+  if (!data.email || !data.password) {
+    throw { statusCode: 400, message: 'Email and password are required' };
+  }
+  const exists = await prisma.admin.findUnique({ where: { email: data.email } });
+  if (exists) throw { statusCode: 400, message: 'An admin with this email already exists' };
+
+  const hashed = await hashPassword(data.password);
+  const admin = await prisma.admin.create({
+    data: {
+      email: data.email,
+      name: data.name || data.email,
+      password: hashed,
+      role: 'SUB_ADMIN',
+      permissions: data.permissions || [],
+    },
+    select: { id: true, email: true, name: true, role: true, permissions: true, createdAt: true },
+  });
+  return admin;
+};
+
+export const updateSubAdminPassword = async (adminId: string, newPassword: string) => {
+  if (!newPassword) throw { statusCode: 400, message: 'New password is required' };
+  const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+  if (!admin) throw { statusCode: 404, message: 'Sub admin not found' };
+  if (admin.role !== 'SUB_ADMIN') throw { statusCode: 400, message: 'Cannot change password of super admin' };
+
+  const hashed = await hashPassword(newPassword);
+  return prisma.admin.update({
+    where: { id: adminId },
+    data: { password: hashed },
+    select: { id: true, email: true, name: true, role: true, permissions: true, createdAt: true },
+  });
+};
+
+export const updateSubAdminPermissions = async (adminId: string, permissions: string[]) => {
+  const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+  if (!admin) throw { statusCode: 404, message: 'Sub admin not found' };
+  if (admin.role !== 'SUB_ADMIN') throw { statusCode: 400, message: 'Cannot edit permissions of super admin' };
+
+  return prisma.admin.update({
+    where: { id: adminId },
+    data: { permissions: permissions || [] },
+    select: { id: true, email: true, name: true, role: true, permissions: true, createdAt: true },
+  });
+};
+
+export const deleteSubAdmin = async (adminId: string) => {
+  const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+  if (!admin) throw { statusCode: 404, message: 'Sub admin not found' };
+  if (admin.role !== 'SUB_ADMIN') throw { statusCode: 400, message: 'Cannot delete super admin' };
+
+  await prisma.admin.delete({ where: { id: adminId } });
+  return { id: adminId };
 };
 
 export const getTalents = async (page: number, limit: number, status?: string, search?: string) => {
@@ -125,9 +200,10 @@ export const getTalentSubscriptionDetails = async (talentId: string) => {
         select: {
           id: true,
           status: true,
+          activatedAt: true,
           expiresAt: true,
           createdAt: true,
-          plan: { select: { name: true } },
+          plan: { select: { id: true, name: true } },
         },
       },
       paymentTransactions: {
@@ -191,16 +267,18 @@ export const getTalentSubscriptionDetails = async (talentId: string) => {
   const subscription = hasActiveSubscription && sub
     ? {
         id: sub.id,
+        planId: sub.plan.id,
         planName: sub.plan.name,
-        activatedDate: lastTxnPurchaseDate || user.createdAt,
+        activatedDate: sub.activatedAt || lastTxnPurchaseDate || user.createdAt,
         expiresAt: sub.expiresAt,
-        duration: sub.expiresAt
-          ? Math.round((sub.expiresAt.getTime() - sub.createdAt.getTime()) / (1000 * 60 * 60 * 24)) + ' days'
+        duration: sub.expiresAt && (sub.activatedAt || lastTxnPurchaseDate)
+          ? Math.round((sub.expiresAt.getTime() - (sub.activatedAt || lastTxnPurchaseDate!).getTime()) / (1000 * 60 * 60 * 24)) + ' days'
           : 'Lifetime',
         status: sub.status,
       }
     : {
         id: null,
+        planId: null,
         planName: 'Basic',
         activatedDate: currentActivatedDate || user.createdAt,
         expiresAt: null,
@@ -223,6 +301,55 @@ export const getTalentSubscriptionDetails = async (talentId: string) => {
     subscription,
     paymentHistory,
   };
+};
+
+export const updateTalentSubscription = async (
+  talentId: string,
+  data: { planId?: string | null; status?: string; activatedAt?: string | null; expiresAt?: string | null }
+) => {
+  const user = await prisma.user.findUnique({
+    where: { id: talentId },
+    select: { id: true, subscription: { select: { id: true, planId: true } } },
+  });
+  if (!user) throw { statusCode: 404, message: 'Talent not found' };
+
+  const sub = user.subscription;
+
+  const updateData: any = {};
+  if (data.planId) {
+    const plan = await prisma.plan.findUnique({ where: { id: data.planId } });
+    if (!plan) throw { statusCode: 400, message: 'Plan not found' };
+    updateData.planId = data.planId;
+  }
+  if (data.status) {
+    if (!['ACTIVE', 'EXPIRED', 'CANCELLED'].includes(data.status)) {
+      throw { statusCode: 400, message: 'Invalid status' };
+    }
+    updateData.status = data.status;
+  }
+  if (data.expiresAt !== undefined) {
+    updateData.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
+  }
+  if (data.activatedAt !== undefined) {
+    updateData.activatedAt = data.activatedAt ? new Date(data.activatedAt) : null;
+  }
+
+  const createPlanId = updateData.planId || sub?.planId;
+  if (!createPlanId) throw { statusCode: 400, message: 'Please select a plan' };
+
+  const updated = await prisma.userSubscription.upsert({
+    where: { userId: talentId },
+    create: {
+      userId: talentId,
+      planId: createPlanId,
+      status: updateData.status || 'ACTIVE',
+      expiresAt: updateData.expiresAt ?? null,
+    },
+    update: updateData,
+    select: { id: true, status: true, expiresAt: true, plan: { select: { id: true, name: true } } },
+  });
+
+  return updated;
 };
 
 export const getCompanies = async (page: number, limit: number, search?: string, verifyFilter?: string) => {
