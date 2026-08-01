@@ -19,7 +19,7 @@ export const getFormOptions = async () => {  const [categories, projectTypes, co
 // ─── Get Public Jobs (browse page) ──────────────────────────────
 export const getPublicJobs = async (query: any) => {
   const {
-    categoryIds, countryIds, gender, ageFrom, ageTo,
+    search, categoryIds, countryIds, gender, ageFrom, ageTo,
     paymentType, projectTypeId, languageIds, nationalityIds,
     ethnicityIds, dialectIds,
     status, sort, page = '1', limit = '12',
@@ -30,6 +30,19 @@ export const getPublicJobs = async (query: any) => {
   const skip = (pageNum - 1) * limitNum;
 
   const where: any = { status: 'APPROVED' };
+
+  if (search) {
+    where.AND = [
+      {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { subTitle: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { usage: { contains: search, mode: 'insensitive' } },
+        ],
+      },
+    ];
+  }
 
   if (status === 'expired') {
     where.lastDateToApply = { lt: new Date() };

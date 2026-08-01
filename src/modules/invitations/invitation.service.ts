@@ -189,6 +189,12 @@ export const getPublicJobInvitation = async (jobId: string) => {
                   gender: true,
                   dob: true,
                   bioDescription: true,
+                  height: true,
+                  weight: true,
+                  chest: true,
+                  waist: true,
+                  shoeSize: true,
+                  hairColor: true,
                   media: {
                     select: { id: true, url: true, type: true },
                     take: 4,
@@ -246,6 +252,14 @@ export const getPublicJobInvitation = async (jobId: string) => {
         age: calculateAge(t.talentProfile?.dob),
         bio: t.talentProfile?.bioDescription || null,
                 media: (t.talentProfile?.media || []).map((m: any) => ({ id: m.id, url: m.url, type: m.type })),
+        physical: {
+          height: t.talentProfile?.height || null,
+          weight: t.talentProfile?.weight || null,
+          chest: t.talentProfile?.chest || null,
+          waist: t.talentProfile?.waist || null,
+          shoeSize: t.talentProfile?.shoeSize || null,
+          hairColor: t.talentProfile?.hairColor || null,
+        },
       };
     }),
   };

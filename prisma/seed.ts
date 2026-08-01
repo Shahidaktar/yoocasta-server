@@ -10,8 +10,8 @@ const seed = async () => {
 
   const admin = await prisma.admin.upsert({
     where: { email },
-    create: { email, password: hashed, name },
-    update: { password: hashed, name },
+    create: { email, password: hashed, name, role: 'SUPER_ADMIN', permissions: [] },
+    update: { password: hashed, name, role: 'SUPER_ADMIN' },
   });
 
   const action = admin.createdAt === admin.updatedAt ? 'created' : 'updated';

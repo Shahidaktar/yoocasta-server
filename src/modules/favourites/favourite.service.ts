@@ -135,6 +135,12 @@ export const getFavourites = async (params: FavouriteFilterParams) => {
                 dob: true,
                 bioDescription: true,
                 skillDescription: true,
+                height: true,
+                weight: true,
+                chest: true,
+                waist: true,
+                shoeSize: true,
+                hairColor: true,
                 media: {
                   select: { id: true, url: true, type: true },
                   take: 4,
@@ -169,6 +175,14 @@ export const getFavourites = async (params: FavouriteFilterParams) => {
       age: calculateAge(t.talentProfile?.dob),
       bio: t.talentProfile?.bioDescription || null,
       skillDescription: t.talentProfile?.skillDescription || null,
+      physical: {
+        height: t.talentProfile?.height || null,
+        weight: t.talentProfile?.weight || null,
+        chest: t.talentProfile?.chest || null,
+        waist: t.talentProfile?.waist || null,
+        shoeSize: t.talentProfile?.shoeSize || null,
+        hairColor: t.talentProfile?.hairColor || null,
+      },
       media: (t.talentProfile?.media || []).map(m => ({
         id: m.id, url: m.url, type: m.type,
       })),

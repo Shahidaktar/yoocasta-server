@@ -131,12 +131,14 @@ model GoogleOAuth {
 }
 
 model Admin {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String?
+  role        String   @default("SUPER_ADMIN") // SUPER_ADMIN | SUB_ADMIN
+  permissions String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("admins")
 }
@@ -778,6 +780,7 @@ model UserSubscription {
   planId          String
   plan            Plan               @relation(fields: [planId], references: [id])
   status          SubscriptionStatus @default(ACTIVE)
+  activatedAt     DateTime?
   expiresAt       DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
