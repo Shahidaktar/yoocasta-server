@@ -828,3 +828,28 @@ model EmailTemplate {
 
   @@map("email_templates")
 }
+
+// ================= CMS / PAGE CONTENT =================
+
+model CmsPage {
+  id              String   @id @default(uuid())
+  pageKey         String   @unique @map("page_key")
+  metaTitle       String   @default("") @map("meta_title")
+  metaDescription String   @default("") @map("meta_description")
+  pageHeading     String   @default("") @map("page_heading")
+  subHeading      String   @default("") @map("sub_heading")
+  pageDescription String   @default("") @map("page_description")
+  address         String   @default("") @map("address")
+  phone           String   @default("") @map("phone")
+  email           String   @default("") @map("email")
+  videoUrl        String   @default("") @map("video_url")
+  bottomHeading   String   @default("") @map("bottom_heading")
+  bottomDescription String @default("") @map("bottom_description")
+  talentFaqs      String   @default("[]") @map("talent_faqs")
+  companyFaqs     String   @default("[]") @map("company_faqs")
+  body            String   @default("") @map("body")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("cms_pages")
+}

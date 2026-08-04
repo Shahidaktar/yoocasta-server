@@ -652,3 +652,82 @@ export const updateEmailTemplate = async (req: Request, res: Response, next: Nex
     next(err);
   }
 };
+
+export const getCmsPages = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await adminService.getCmsPages();
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createCmsPage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { pageKey, metaTitle, metaDescription, pageHeading, subHeading, pageDescription, address, phone, email, videoUrl, bottomHeading, bottomDescription, talentFaqs, companyFaqs, body } = req.body;
+    if (!pageKey || !pageKey.trim()) return ApiResponse.error(res, 'Page key is required', 400);
+    const result = await adminService.createCmsPage({
+      pageKey,
+      metaTitle: metaTitle || '',
+      metaDescription: metaDescription || '',
+      pageHeading: pageHeading || '',
+      subHeading: subHeading || '',
+      pageDescription: pageDescription || '',
+      address: address || '',
+      phone: phone || '',
+      email: email || '',
+      videoUrl: videoUrl || '',
+      bottomHeading: bottomHeading || '',
+      bottomDescription: bottomDescription || '',
+      talentFaqs: talentFaqs || '[]',
+      companyFaqs: companyFaqs || '[]',
+      body: body || '',
+    });
+    return ApiResponse.success(res, result, 'Page created');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCmsPageByKey = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await adminService.getCmsPageByKey(req.params.key as string);
+    return ApiResponse.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateCmsPage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { metaTitle, metaDescription, pageHeading, subHeading, pageDescription, address, phone, email, videoUrl, bottomHeading, bottomDescription, talentFaqs, companyFaqs, body } = req.body;
+    const result = await adminService.updateCmsPage(req.params.key as string, {
+      metaTitle: metaTitle || '',
+      metaDescription: metaDescription || '',
+      pageHeading: pageHeading || '',
+      subHeading: subHeading || '',
+      pageDescription: pageDescription || '',
+      address: address || '',
+      phone: phone || '',
+      email: email || '',
+      videoUrl: videoUrl || '',
+      bottomHeading: bottomHeading || '',
+      bottomDescription: bottomDescription || '',
+      talentFaqs: talentFaqs || '[]',
+      companyFaqs: companyFaqs || '[]',
+      body: body || '',
+    });
+    return ApiResponse.success(res, result, 'Page updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteCmsPage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await adminService.deleteCmsPage(req.params.key as string);
+    return ApiResponse.success(res, result, 'Page deleted');
+  } catch (err) {
+    next(err);
+  }
+};

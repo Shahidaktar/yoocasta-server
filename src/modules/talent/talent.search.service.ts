@@ -184,11 +184,18 @@ if (params.professional?.length) {
     where.id = { in: physicalNumericUserIds };
   }
 
-  // 8. Sorting
-  let orderBy: any = { createdAt: 'desc' };
-if (params.sort === 'a-z') orderBy = { firstName: 'asc' };
-if (params.sort === 'z-a') orderBy = { firstName: 'desc' };
-if (params.sort === 'most_viewed') orderBy = { talentProfile: { views: 'desc' } };
+  // 8. Sorting — premium (active subscription, higher plan priority) always first
+  const premiumFirstOrder = [
+    { subscription: { status: 'asc' } },
+    { subscription: { plan: { priority: 'desc' } } },
+  ];
+
+  let sortOrder: any = { createdAt: 'desc' };
+  if (params.sort === 'a-z') sortOrder = { firstName: 'asc' };
+  if (params.sort === 'z-a') sortOrder = { firstName: 'desc' };
+  if (params.sort === 'most_viewed') sortOrder = { talentProfile: { views: 'desc' } };
+
+  const orderBy = [...premiumFirstOrder, sortOrder];
 
   const [talents, total] = await Promise.all([
     prisma.user.findMany({

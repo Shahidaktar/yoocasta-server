@@ -65,5 +65,10 @@ router.delete('/countries/:id', authenticate, authorize('ADMIN'), authorizeAdmin
 router.get('/email-templates', authenticate, authorize('ADMIN'), authorizeAdminTab('templates'), adminController.getEmailTemplates);
 router.get('/email-templates/:key', authenticate, authorize('ADMIN'), authorizeAdminTab('templates'), adminController.getEmailTemplateByKey);
 router.put('/email-templates/:key', authenticate, authorize('ADMIN'), authorizeAdminTab('templates'), adminController.updateEmailTemplate);
+router.get('/cms', authenticate, authorize('ADMIN'), authorizeAdminTab('cms'), adminController.getCmsPages);
+router.get('/cms/:key', authenticate, authorize('ADMIN'), authorizeAdminTab('cms'), adminController.getCmsPageByKey);
+router.post('/cms', authenticate, authorize('ADMIN'), authorizeAdminTab('cms'), adminController.createCmsPage);
+router.put('/cms/:key', authenticate, authorize('ADMIN'), authorizeAdminTab('cms'), adminController.updateCmsPage);
+router.delete('/cms/:key', authenticate, authorize('ADMIN'), authorizeAdminTab('cms'), adminController.deleteCmsPage);
 
 export default router;

@@ -1440,3 +1440,298 @@ export const updateEmailTemplate = async (key: string, data: { subject: string; 
   });
   return tpl;
 };
+
+export const getCmsPages = async () => {
+  await ensureCmsPages();
+  return prisma.cmsPage.findMany({ orderBy: { pageKey: 'asc' } });
+};
+
+export const getCmsPageByKey = async (key: string) => {
+  const page = await prisma.cmsPage.findUnique({ where: { pageKey: key } });
+  if (!page) throw { statusCode: 404, message: 'Page not found' };
+  return page;
+};
+
+const cleanCmsHtml = (html: string) =>
+  html.replace(/&nbsp;/g, ' ').replace(/\u00a0/g, ' ');
+
+const cleanCmsText = (text: string) => (text || '').replace(/\u00a0/g, ' ');
+
+const DEFAULT_TALENT_FAQS = [
+  { q: 'What is Yoocasta?', a: 'Yoocasta is Your Own Online Casting Agency which acts as a platform to connect you with various production houses or event companies or casting professionals by applying to the opportunities posted by them with its Best Feature - Next Day Payment!' },
+  { q: 'Why should I register with Yoocasta?', a: 'Yoocasta offers a very interesting and attractive feature of next working day payment. With Yoocasta\'s "Premium Plus Membership" you can collect your payment up to AED 5000 (per project) on the next working day. We help you to avoid multiple follow ups and the struggle to get your hard-earned money.' },
+  { q: 'How do I start working with Yoocasta.com as a talent?', a: 'It\'s very simple:\n\n1. Sign up with Yoocasta with a valid email ID which will be used for all communications henceforth.\n2. Click on the verification link sent to the registered ID.\n3. Complete your profile.\n4. Enter all the details to the best accuracy.\n5. Upload the best headshots which shows your Facial features clearly (Avoid selfies & pics with Sunglasses or hats) and you are set to apply for all the opportunities and be the Next Star in the Making!' },
+  { q: 'How to have success on Yoocasta.com?', a: '1. Signing up to Yoocasta is just one step to beginning your journey towards success with us. As a self-promotion website, it is crucial to make yourself visible and appealing to the client.\n\n2. Detailed description and any special skills you have! Your description should include an overview of you as a person and your interests. Mention your special skills as this will make it easier for you to get noticed. Do you do yoga? Swimming? Acrobats? Sky Diving? Dance? Beatbox? Include them!\n\n3. Experience (if any) — let us know about your previous experiences as this will be a plus point.\n\n4. Courses (if any) — always good to mention your courses.\n\n5. Images — keep them clean! Upload pictures that show your work or characters. Avoid group pictures, avoid revealing photos.\n\n6. Apply to the Jobs! If you see a job that matches your requirement, just Apply!' },
+  { q: 'How to Upload Headshots?', a: 'Tips For a good headshot:\n- Make sure Pictures are with high quality resolution\n- Make sure picture should have clear facial features (Avoid sunglasses and hats)\n\nDon\'ts:\n- Don\'t upload selfies.\n- Don\'t upload blurred, edited or photos with other people.\n- Don\'t upload photos in low resolution.\n- Don\'t upload images of other people.\n- No nudity should be in the photo.\n\nDo\'s:\n- Upload clear and recent photos on a plain background.\n- Upload photos in great lighting (natural light works best)\n- Upload photos from different angles and both full body and half shots.\n- Upload Pictures showing your personality or various characters.' },
+  { q: 'Managing Photos', a: 'You can always delete and replace photos with new photos, which is essentially important if you change your style, beard, hair color or other alterations. Keep your profile up to date always as you never know someone might be viewing your profile!' },
+  { q: 'How to add/manage your Videos?', a: 'Having a video on your profile is hugely beneficial. It gives the Casting Directors a chance to get to know you a little more.\n\nDon\'ts:\n- Don\'t upload a video that you are not visible in.\n- Don\'t share offensive or inappropriate content.\n- Don\'t upload bad quality video.\n\nDo\'s:\n- Do include a general casting video of yourself.\n- Do make sure you tell us about yourself and your interests.\n- Do show off your personality.\n\nAdding Your Videos:\n1. Upload the video to YouTube.com or Vimeo.com\n2. Copy the link into the provided box and click "Add Video" and give a suitable title.' },
+  { q: 'How and what audios to upload?', a: 'Got an awesome voice? Want to share it with the world?\n\n1. Be sure that your audio is in either mp3 or wav format and no bigger than 1mb.\n2. From your Dashboard, select Add Video/Audios and under Audio, click "Choose File" and select the audio file you wish to upload.' },
+  { q: 'Is it important to add course/experience details?', a: 'Yes, adding experience and course details adds value to your profile and increases your chance of selection for any project. Letting clients know about your experience is always good.' },
+  { q: 'What is Premium Plus Membership?', a: 'We understand the struggle and pain of continuous follow ups and delays in the payment from the client. With Premium Plus membership you can collect your payment up to AED 5000 the next working day after your shoot.\n\nBenefits:\n1. Apply for unlimited roles\n2. Profile pushed to the front of the database\n3. Showcased above Premium & Basic members\n4. Upload up to 30 Photos\n5. 30 Videos\n6. 30 Voice Clips\n7. Know the number of views of your profile' },
+  { q: 'What is a Premium Membership?', a: 'Our Premium Membership includes benefits same as that of Premium Plus except that the payment shall be paid when the client pays us.\n\nBenefits:\n1. Apply for unlimited roles\n2. Profile pushed to the front of the database\n3. Showcased above basic members\n4. Upload up to 30 Photos\n5. 30 Videos\n6. 30 Voice Clips\n7. Know the number of views of your profile' },
+  { q: 'How many memberships can I have?', a: 'Any talent by default will have one basic membership and maximum of two paid memberships of which the last upgraded membership will be active and the second paid membership will be on hold. On hold membership will become active on expiry of the ongoing membership. Talent cannot downgrade to a lower paid/duration membership. Any upgraded membership will be effective from the next calendar day.' },
+  { q: 'Can I Cancel my subscription/membership package?', a: 'Yes, you can cancel your individual plan from membership plans page. Once the subscription or the membership is cancelled it cannot be revoked.' },
+  { q: 'Is there any refund on cancellation of membership/subscription?', a: 'Sorry, there is No refund of membership / payment in any case. Final decision shall be made by Yoocasta management.' },
+  { q: 'Can I see which other talents have been shortlisted for the jobs I have applied for?', a: 'Yes, on "My Applications" page, for a particular role which you have applied for click on the green icon next to the status.' },
+  { q: 'How to Apply to the Jobs?', a: '1. Apply through the emails you receive by clicking on the links.\n2. Apply directly on the website. Click on the job and once the job details page opens, you can apply.\n3. Click on "Apply Now" on the Job box.\n\nRemember, you cannot apply for jobs by responding to the emails, you must apply directly on the platform.' },
+  { q: 'So, You Have Applied for the Role, Now What?', a: 'After applying for a job wait for a notification email from Yoocasta. If you get shortlisted or selected you shall receive an email and one of us from Yoocasta team will get in touch with you. If you DO NOT get contacted within 24 hours, please connect with us on +971582224178 or send us an email at support@yoocasta.com.' },
+  { q: 'Why am I unable to apply for the jobs?', a: 'Please check your membership package. The number of jobs that you can apply to is based on your membership plan. Still if you have any problems please connect with us on 00971582224178 or send us an email at support@yoocasta.com.' },
+  { q: 'How do I reset my Password?', a: 'Lost or Forgot your Password? On the Login page of Yoocasta click on Reset password. Enter your Email address and you shall receive the link on your email address to reset your password.' },
+  { q: 'How do I change my password?', a: 'On the left menu on the dashboard, you have an option "Change password". Click on it and you can now change the password.' },
+  { q: 'What should I do if I have Payment Problems?', a: 'Trying to upgrade but the payment is not going through? Please connect with us on +971582224178 or send us an email at support@yoocasta.com.' },
+];
+
+const DEFAULT_COMPANY_FAQS = [
+  { q: 'Why am I not able to post a job without verification?', a: 'As a company protocol it takes us a few minutes to verify the account details. Once verified you will be able to post the job.' },
+  { q: 'Can I Mark Talents for my future projects?', a: 'Yes, you can use our Cast Bag features to mark talents for your future projects.\n\n1. Simply create a Cast Bag, give it a name.\n2. Select the talents for the project and add them to the Cast Bag by a single click.\n3. Alternatively select multiple talents from Talent Pool and click on add to Cast Bag.\n\nGood News! You can share this folder with any of your friends and clients.' },
+  { q: 'What is a Cast Bag?', a: 'Cast Bag is a feature that acts like folders where you/company user can select some talents and store their profiles for future references. A company can have multiple Cast Bags. These Cast Bags can be shared over emails with a validity period.' },
+  { q: 'Is there any fee per posting a job?', a: 'Absolutely Not! Posting a job is absolutely free.' },
+  { q: 'I have confirmed/selected the talents. What Next?', a: 'Great News! Someone from Yoocasta team shall get in touch with you to proceed further with the project. Alternatively, please feel free to call us on 971582224178 or send us an email at support@yoocasta.com.' },
+];
+
+const DEFAULT_CMS_PAGES = [
+  {
+    pageKey: 'home',
+    metaTitle: 'Yoocasta | Your Own Online Casting Agency',
+    metaDescription: 'Yoocasta connects talents with casting directors, producers and industry professionals. Register or login to apply to unlimited casting jobs across film, TV & events.',
+    pageHeading: 'AED 20 ONLY',
+    subHeading: 'Apply to unlimited jobs at',
+    pageDescription: 'Register or Login to become Premium!',
+    address: '',
+    phone: '',
+    email: '',
+    videoUrl: 'https://pub-9a6daccdd56649a4bb690162026e4c5d.r2.dev/casting_video/casting_video_10107.mp4',
+    bottomHeading: 'Connecting Talents & Opportunities',
+    bottomDescription: 'Your own online casting agency',
+    body: '',
+  },
+  {
+    pageKey: 'blogs',
+    metaTitle: 'Blogs & Insights | Yoocasta',
+    metaDescription: 'Browse our portfolio of casting projects, talent spotlights, and industry insights from the Yoocasta team.',
+    pageHeading: 'Our Work',
+    subHeading: '',
+    pageDescription: 'Browse our portfolio of casting projects, talent spotlights, and industry insights from the Yoocasta team.',
+    address: '',
+    phone: '',
+    email: '',
+    videoUrl: '',
+    body: '',
+  },
+  {
+    pageKey: 'browse-jobs',
+    metaTitle: 'Casting & Jobs | Yoocasta',
+    metaDescription: 'Explore casting calls across film, TV & events and find the perfect role. Browse open casting jobs on Yoocasta.',
+    pageHeading: 'Casting & Jobs',
+    subHeading: 'Explore casting calls across film, TV & events',
+    pageDescription: 'Find & apply to the perfect role in minutes',
+    address: '',
+    phone: '',
+    email: '',
+    videoUrl: 'https://pub-9a6daccdd56649a4bb690162026e4c5d.r2.dev/casting_video/casting_video_10107.mp4',
+    body: '',
+  },
+  {
+    pageKey: 'browse-talents',
+    metaTitle: 'Talent Pool | Yoocasta',
+    metaDescription: 'Discover the region\'s finest acting, modeling & creative talent. Search, filter & shortlist the perfect fit on Yoocasta.',
+    pageHeading: 'Talent Pool',
+    subHeading: 'Discover the region\'s finest acting, modeling & creative talent',
+    pageDescription: 'Search, filter & shortlist the perfect fit in minutes',
+    address: '',
+    phone: '',
+    email: '',
+    videoUrl: 'https://pub-9a6daccdd56649a4bb690162026e4c5d.r2.dev/casting_video/casting_video_10107.mp4',
+    body: '',
+  },
+  {
+    pageKey: 'about',
+    metaTitle: 'About Us | Yoocasta',
+    metaDescription: 'Yoocasta is your own online casting agency connecting talents with casting directors, producers, photographers and industry professionals.',
+    pageHeading: 'About Us',
+    subHeading: 'Your Own Online CASTing Agency',
+    pageDescription: '',
+    address: '',
+    phone: '',
+    email: '',
+    body: `<p><strong style="color:#3835A4">Yoocasta</strong>, Your Own Online CASTing Agency, is a modern style talent agency! A Talent platform that connects you, the talented, beautiful, inspiring and aspiring individuals that you are, with Casting Directors, Producers, Directors, Photographers or other industry professionals.</p><p>Yoocasta aims to help the media professionals get what they deserve in every aspect. We aim to provide the best castings &amp; job opportunities to all our talents with a good monitory reward that they deserve.</p><p>With an ever-increasing database of talents and the job opportunities in the Region, we aim to place our talents (Experienced or Freshers) in commercial work in India, UAE and MENA every year and make it easy to enter the industry of Acting, modelling, Events or other entertainment related work.</p><p>New to acting / modeling or your field of interest? Nothing to worry, we provide ample of opportunities for you to get kick start with the Journey.</p><p>Yoocasta is your own online platform, which gives you, the talent, all the control! You decide what you put on your profile and which impression you want to leave on a casting professional. You choose which opportunities to pursue and which to decline, and most importantly, you get the payment you deserve on the <strong style="color:#C6007E">NEXT WORKING DAY</strong>.</p><p>Fresher or Experienced, Yoocasta provides you the opportunities to learn and work! Self-grooming, learning at every moment every day, is a key to success. There are No shortcuts and you need to start from somewhere. And here we are for you to start with. All there is left to do is, sign up and put that passion to work!</p>`,
+  },
+  {
+    pageKey: 'subscription-plans',
+    metaTitle: 'Subscription Plans | Yoocasta',
+    metaDescription: 'Pick the plan that fits your career goals. Upgrade anytime to unlock more features on Yoocasta.',
+    pageHeading: 'Choose Your Plan',
+    subHeading: 'Pick the plan that fits your career goals. Upgrade anytime to unlock more features.',
+    pageDescription: '',
+    address: '',
+    phone: '',
+    email: '',
+    body: '',
+  },
+  {
+    pageKey: 'contact-us',
+    metaTitle: 'Contact Us | Yoocasta',
+    metaDescription: 'Get in touch with the Yoocasta team for any questions about our platform, memberships, or casting services.',
+    pageHeading: 'Contact Us',
+    subHeading: 'Get in touch with us. We\'d love to hear from you.',
+    pageDescription: '',
+    address: 'Yoocasta FZE LLC\nSharjah Publishing City, UAE',
+    phone: '+971582224178 | 048848938',
+    email: 'casting@yoocasta.com\nmanagement@yoocasta.com',
+    body: '',
+  },
+  {
+    pageKey: 'terms-of-service',
+    metaTitle: 'Terms of Service | Yoocasta',
+    metaDescription: 'Please read these terms carefully before using our platform.',
+    pageHeading: 'Terms of Service',
+    subHeading: 'Please read these terms carefully before using our platform.',
+    pageDescription: '',
+    address: '',
+    phone: '',
+    email: '',
+    body: `<h3>EFFECTIVE AS OF 10th Jan 2019</h3><h3>OVERVIEW</h3><p>These Terms of Use (Terms) govern the use of our website located at www.yoocasta.com (website) and any subdomain of this URL in platform and the services available thereon and constitute a legally binding agreement between Yoocasta FZE LLC (the "Company") and the user.</p><p>By accessing our website or using any of the services or applications provided on our Website "Services", user agrees to be bound by these Terms of Use. If user does not agree with these Terms, use and access to our Website and services must be stopped immediately.</p><h3>ACCEPTANCE OF TERMS OF USE</h3><p>By using www.yoocasta.com user acknowledge and understand that www.yoocasta.com is an online talent casting platform that connects the emerging talent with the industry professionals. Industry Professionals i.e. Companies or freelancers share their talent requirements either posting directly on Yoocasta or through the administrator of the platform and in response to that requirement Yoocasta provide them with the best matching talent out of its talent pool. The Talent categories include actors, singers, dancers, models, models, photographers, Directors, makeup professionals, promoters and other. The user further acknowledges that before using, visiting, registering and/or otherwise accessing www.yoocasta.com he/she have read the Terms of Use and hereby affirm that:</p><ul><li>User is fully able and competent to enter the terms, conditions, obligations, affirmations, representations, and warranties set forth in these Terms of Use, and to abide by and comply with these Terms of Use,</li><li>User is not a person barred from receiving services under the laws of UAE.</li><li>In case of use of the Platform or creating an Account on behalf of a business, you have the authority to bind that business.</li></ul><h3>SCOPE</h3><p>This document contains provisions that define the limits, legal rights and obligations of www.yoocasta.com and the user with respect to use of our website and services including the content that has been uploaded, communications, functions and internet links.</p><h3>TYPES OF USERS</h3><ul><li>This apply to all the visitors browsing www.yoocasta.com or using our services by becoming a member, either individuals for their own use and those using it on behalf of an entity.</li><li>1. Emerging talent, looking for the casting roles/jobs, and</li><li>2. Industry professionals i.e. organizations, agencies, institutions, or freelancers looking for the talent for different roles and jobs.</li><li>Note: Yoocata will not trade with or provide any services to OFAC and countries sanctioned by UAE Government.</li></ul><h3>JOB POSTING CRITERIA</h3><ul><li>All the Industry professionals i.e. organizations, agencies, institutions, or freelancers looking for the talent for different roles and jobs while posting jobs on Yoocasta undertake that the:</li><li>1. Posted is valid and not breach any applicable law and government regulations.</li><li>2. Will abide by the editorial guidelines of Yoocasta while listing/posting jobs.</li><li>3. The job posting must specify that the job/role offered is Paid or Unpaid work. In case the work is paid the rate of payment should also be clearly specified.</li></ul><h3>USER ACCOUNT</h3><p>In order to use our Services, user must at first create an account ("profile") and provide us with accurate, complete and updated information to complete their profile. The treatment of the data/information shared will be subject to the terms of Privacy Policy of www.yoocasta.com wherever applicable.</p><h3>MEMBERSHIP PLANS &amp; KEY FEATURES</h3><p>www.yoocasta.com operates a paid basic &amp; Premium, which falls under recurring billing with the following key features:</p><p><strong>BASIC MEMBERSHIP</strong></p><p>Basic membership is a free of charge service which allows the member to upload up to 5 photos, 1 video, 1 audio and 2 jobs apply (per month). It enables the member to receive the casting updates, payment in case of getting and performing a job through the platform as soon as the payment is released from the industry professional who casted the talent for the role/job and www.yoocasta.com receive the payment, job notifications, profile views and position/appearance in the database after the premium and premiumplus members.</p><p><strong>PREMIUM MEMBERSHIP</strong></p><p>Premium membership is a paid service provided against the charges given on www.yoocasta.com and updated from time to time for a specific time period. Premium membership allows the member to upload up to 30 photos, 30 videos, 30 audios, and apply for unlimited jobs during the premium membership period. It enables the member to receive casting updates, payment in case of getting and performing a job through the platform (as soon as the payment is released from the industry professional who casted the talent for the role/job and www.yoocasta.com receives the payment), job notifications, profile views, and position/appearance in the database before basic members (middle).</p><p>Premium membership is set to auto-renew on the day of package expiry, ensuring uninterrupted access to premium features unless canceled by the member before the renewal date.</p><p><strong>UPGRADING MEMBERSHIP</strong></p><p>A talent, at any point of time can have maximum of 1 Paid active membership/packages offered by www.yoocasta.com.</p><p>Any user holding the basic membership shall be eligible for upgrading the membership anytime.</p><p>In case a talent purchases 2nd Paid Membership on top of the 1st Paid membership, the 1st membership shall go on Hold until the expiry of the 2nd (latest) membership and shall be reactivated automatically on the expiry of 2nd membership.</p><p>The 2nd (latest) membership purchased will be the active and counted first. On expiry of the latest, the subsequent package (if any) will become active. The last active / expired membership shall be auto renewed automatically.</p><p>However, payment to any user for any role/job done shall be made as per the terms of membership plan the user possessed at the time of that job not as per the terms of payment of upgraded membership.</p><h3>USER UPLOADED CONTENT</h3><p>User understands and agrees that all their information/data of any kind and in form ("Content") that the user is uploading on our platform they are authorised to share with us i.e. they have proprietary rights over it or they have license to use without any restriction.</p><p>User undertakes that the content does not contain any harmful or destructive content, the Content is not pornographic, does not contain threats or incite violence, and does not violate the privacy or publicity rights of any third party or any of the laws of UAE. User further agrees and understand that www.yoocasta.com reserves the right to take down immediately all the content from the platform found in breach of these terms and any of UAE Laws.</p><h3>USER'S LICENCE TO US</h3><p>The user agrees and understands that www.yoocasta.com shall have the non-exclusive, irrevocable, royalty-free rights and license to use, host, reproduce, modify, communicate, publish, publicly display on www.yoocasta.com or related social media accounts, publicly perform and distribute the User Content for the limited purposes only.</p><h3>SUBSCRIPTION FEE &amp; TERMS OF PAYMENT</h3><ul><li>www.yoocasta.com contains content including but not limited to text, graphics, photographs, images, news reports, articles, editorial and other writings, audio and video recordings, data, listings, and directory information (collectively, "Content") that is accessible by Users. However, it also offers premium services, which can be accessed only through purchase or paid subscription i.e. for 3 months, 6 months and 12 months subscription.</li><li>Reserves the right to increase the membership fee at any time as per its sole discretion.</li><li>The duration of subscription period needs be selected by the user while subscribing.</li><li>The payment for the subscription shall be charged in advance.</li><li>The means of payment for the subscription shall be _______________, and payment shall be charged as per the duration/plan selected.</li><li>The subscription shall be automatically renewed unless you opt out or cancel by following the instructions in these Terms of Use.</li><li>www.yoocasta.com may, in its sole discretion, suspend access to your account or deactivate your account without notice to you if the Company is unable to process your payment.</li><li>You may update any of your billing information (including a change to your desired billing payment method).</li><li>All fees paid in connection with your account are non-refundable and non-transferable.</li><li>"United Arab of Emirates is our country of domicile" and stipulate that the governing law is the local law.</li><li>Visa and Master Card and all currencies will be accepted for payment converted in AED.</li><li>We will not trade with or provide any services to OFAC and sanctioned countries.</li><li>Customer using the website who are Minor /under the age of 18 shall not register as a User of the website and shall not transact on or use the website.</li><li>Cardholder must retain a copy of transaction records and Merchant policies and rules.</li><li>User is responsible for maintaining the confidentiality of his account.</li></ul><h3>MODIFICATION OF TERMS OF USE</h3><p>We reserve the right to change these Terms of Use at any time as per our sole discretion. If www.yoocasta.com makes a material change to these Terms of Use, an update will be posted in this regard on the website for a reasonable period and will indicate the effective date of the changes.</p><p>It is your responsibility to review these Terms of Use for any changes, having notified the changes, your constant use of website and services will constitute your acceptance of the changed terms. This Agreement applies to all persons and entities who visit any of Websites and/or use or access any of the services.</p><h3>PROPRIETARY RIGHTS ON INTELLECTUAL PROPERTY</h3><p>www.yoocasta.com owns, operates, licenses, controls, and provides access to the Website.</p><p>www.yoocasta.com has all the proprietary rights over all the associated materials, applications, software, and other contents of the Website available under the relevant laws unless otherwise notified. All trademarks, logos, service marks, trade names displayed on www.yoocasta.com are proprietary to Yoocasta FZE LLC unless otherwise noted and are protected by applicable intellectual property and other laws.</p><p>The use any of the proprietary work in any manner, except pursuant to the express limited grant of rights hereunder, is strictly prohibited. Subject to compliance of these Terms of Use, www.yoocasta.com grants user the non-exclusive and revocable license to create profile, upload or submit information, software, text, images, audio, video, and other materials, make changes or delete it, except to delete or change any Intellectual Property proprietary notices contained therein.</p><h3>THIRD PARTY CONTENT AND LINKED SITES</h3><p>www.yoocasta.com may contain links to other websites ("Third Party Services") or use third party service providers for provision of certain services to you in connection with your membership and may disclose personally identifiable information to the third party in case of providing the services you requested.</p><h3>DISRUPTION IN SITE ACCESS</h3><p>We are committed to provide continued and quality services, However, there might be circumstances when access to our website may be interrupted, restricted or delayed, which we will endeavour to resolve as soon as possible. In no case we will be liable for damages or costs for such interruption, restriction and delays.</p><h3>CUSTOMIZED EMAILS</h3><p>As a result of registration and membership with www.yoocasta.com you will receive casting calls, update emails matching your profile, our email newsletters, account updates and information about www.yoocasta.com features.</p><h3>DISCLAIMER</h3><p>www.yoocasta.com disclaims all warranties of any kind either expressed or implied, including any warranties of merchantability, non-infringement and fitness for a particular purpose i.e. validity and accuracy of the user content and any loss or damage resulted from acting upon that content/data.</p><h3>RESTRICTION OF LIABILITY</h3><ul><li>www.yoocasta.com will not be liable for any damages or injury caused by any use of our Website or services i.e. resulting from User Uploaded Information, use of, inability to use, or performance of the Website or any of the contents or features thereon, any action taken in connection with an investigation by www.yoocasta.com or law enforcement authorities regarding your use of the Website or the contents thereof, any action taken by or in connection with copyright owners.</li><li>www.yoocasta.com will not be liable for any discrepancy in description of any casting role/job posted on its website, neither www.yoocasta.com will be responsible for the for any act or omission on behalf of the referred talent to the industry professionals in the execution of the job/performance.</li><li>In case any employer and employee relationship take place between the users of the website, it is for the parties to do the mutual due diligence and adhere the all the relevant laws and www.yoocasta.com will not share any responsibility for any loss or injury resulting to anyone out of such engagement.</li><li>www.yoocasta.com will not be responsible for any loss caused to the third party as a result of any act or omission of the talent and industry professionals in the execution/performance of the role/job posted on the platform.</li><li>www.yoocasta.com is not responsible for the quality of work carried out by the referred talent to the industry professionals as the selection of the talent for a particular role/job is the responsibility of the industry professionals.</li><li>www.yoocasta.com does not in any case guarantee the job or visa status to any user or business.</li><li>In case of any advertisement on www.yoocasta.com from any third party, www.yoocasta.com shall not be responsible for any discrepancy or any loss or damage caused to anyone as result of it.</li></ul><h3>INDEMNITY</h3><p>To the fullest extent permitted by law, you agree to defend, indemnify and hold www.yoocasta.com its affiliates, subsidiaries, and office bearers harmless from any potential claims and expenses, including reasonable legal fees, related to any breach of this Agreement resulting from your use of the www.yoocasta.com or any Content.</p><h3>CANCELLATION POLICY</h3><p>www.yoocasta.com reserves the right to cancel the subscription/membership of the user at any point of time without giving prior notice if found in breach of any of these terms.</p><h3>ASSIGNMENT</h3><p>The user/subscriber shall not be able to transfer, sub-contract or otherwise deal with subscriptions of www.yoocasta.com.</p><h3>EXCLUSION OF THIRD-PARTY RIGHTS</h3><p>These terms of use are for the benefit and understanding of www.yoocasta.com and its and are not intended for or to be enforceable by any third party.</p><h3>MODIFICATIONS</h3><p>There shall be no amendment or modification of these Terms of Service unless the same is in writing and signed by www.yoocasta.com and the user or its authorized person.</p><h3>TERMINATION</h3><p>User may terminate its account by submitting a termination request to www.yoocasta.com. www.yoocasta.com reserves the right to restrict, suspend, deny or terminate access to all or part of any of the Website and to deny access to any person in its sole discretion without notice or liability of any kind. Any violation of these Terms of Use may be referred to law enforcement authorities. Termination may result in the loss of information related to your account. Proprietary, warranty, disclaimers, indemnity and liability related provisions shall survive the termination.</p><h3>TERMS OF USE GOVERNS</h3><p>In case of any conflict between www.yoocasta.com and user over the terms of use and any other document mutually signed, these Terms of Use will govern the resolution of dispute between the Parties.</p><h3>INTERPRETATION OF TERMS</h3><p>The Terms of Use and the interpretation thereof shall be governed by and construed in accordance with the laws of UAE and your continued use of the same constitutes your irrevocable submission to the exclusive jurisdiction of the Courts of UAE. If any part of these Terms of Use is declared unlawful, void, or unenforceable by any Court of UAE, that part will be deemed severable and will not affect the validity and enforceability of any remaining provisions.</p><h3>JURISDICTION</h3><p>Yoocasta FZE LLC maintains the website www.yoocasta.com ("Site") and makes no representation that the contents of the Website are appropriate or available for use outside UAE and governed under the Laws of UAE.</p><h3>ENTIRE AGREEMENT</h3><p>These terms of use contain the entire agreement between the parties relating to their engagement.</p><h3>PAYMENT CONFIRMATION</h3><ul><li>Once the payment is made, the confirmation notice will be sent to the client via email within 24 hours of receipt of payment.</li><li>Customer can cancel their membership plan within 24 hours; refunds will be made back to the payment solution used initially by the customer. Please allow for up to 45 days for the refund transfer to be completed.</li></ul><h3>REFUND POLICY</h3><ul><li>Refunds will be done only through the Original Mode of Payment and will be processed within 10 to 45 days depends on the issuing bank of the credit card.</li><li>Subscription once cancelled will be effective immediately.</li></ul>`,
+  },
+  {
+    pageKey: 'privacy-policy',
+    metaTitle: 'Privacy Policy | Yoocasta',
+    metaDescription: 'Read how Yoocasta FZE LLC collects, manages, stores and protects your personal data.',
+    pageHeading: 'Privacy Policy',
+    subHeading: 'Last updated on 10/01/2019',
+    pageDescription: '',
+    address: '',
+    phone: '',
+    email: '',
+    body: `<p>Your privacy is important to us. At https://www.yoocasta.com/ the services are provided by Yoocasta FZE LLC. We are committed to protect and handle your privacy and information in the most transparent manner. This statement lays out how we collect, manage, store and protect your personal data. Please read carefully this statement to get a clearer understanding about our privacy policy. By providing us with any personal information, you are consenting to the use of your personal information as contemplated in this privacy notice. If you do not agree to any part of this Policy, Please stop accessing the website and do not submit any of your personal information here.</p><h3>WHAT INFORMATION DO WE COLLECT</h3><ul><li>Your Internet Protocol (IP) address, operating system, browser type, last used domain and the domain accessed after exiting our website, the date and time of access of our website, items clicked on, viewed pages and the amount of time spent on a particular page of our website are the instances of "Non-Personally Identifiable Information" we may collect on account of your usage of our website.</li><li>We also collect certain information (automatically) through the use of "cookies" and similar tracking technologies. Cookies are small data files that are stored on a user's computer or device at the request of a website to enable the website to recognize previous visitors and retain information such as user preferences and history. If you wish to block, erase, or be warned of cookies, please refer to your browser instructions or "help screen" to learn about these functions. However, if your browser is set to not accept cookies or if you reject a cookie, you will not be able to sign in to your user account or use certain parts of the Services.</li><li>We collect your Personal Data i.e. full name, email address, phone number, current address, photos and other media that you voluntarily provide us, when you register for Yoocasta or create a talent profile.</li><li>We also collect Personal Data when you sign up for email newsletters or alerts on Yoocasta. Personal Data may contain your name, email, contact information, your location, as well as other information you provide us.</li><li>We also collect billing information when processing payment for the purchase of our services and membership.</li><li>We collect and store data about you when you use and/or communicate with the website administration.</li><li>We may also obtain information about you through third party sources as permitted by applicable law, such as public databases, social media platforms, and marketing partners.</li></ul><h3>USE OF INFORMATION</h3><ul><li>We use your information:</li><li>To create an account for you to use our platform and services.</li><li>To respond to your requests or to manage your user account.</li><li>To fulfil your requests, respond to your inquiries.</li><li>To match your data for the potential roles and jobs with the third parties advertising such roles and jobs.</li><li>To make your talent profile visible publicly and discoverable across the worldwide web.</li><li>To use the contents of your profile on the social media platforms of Yoocasta for the marketing and promotional purposes.</li><li>To use it for analytics, reporting and marketing purpose.</li><li>To monitor the safety and security of our services and platform.</li><li>To use data and content about users for communications promoting membership, job posting, and engagement with us.</li><li>To assess the performance of advertisements displayed to our users directly by us or through third party advertising partners.</li></ul><h3>YOUR RIGHTS IN RELATION TO YOUR INFORMATION</h3><ul><li>You have various rights in relation to your personal information as mentioned below:</li><li>To access your data.</li><li>To modify the data, you have provided to us at any time through your Yoocasta profile.</li><li>To have your data rectified promptly if it is inaccurate or incomplete.</li><li>To have your data erased in specific circumstances.</li></ul><h3>DATA RETENTION</h3><p>We retain information for the maximum period allowable by law, where there is a reasonable business need or legitimate interest to retain such data and may store it on our server.</p><h3>CHILDREN</h3><p>Our Services are not intended for use by children under the age of 18, and such use is prohibited by our Terms of Service. We do not knowingly collect Personal Information from children under 18. If you become aware that a child has provided us with Personal Information, please contact us as set forth in this Policy.</p><p>In case a user account has been created by the Guardian of a children under the age of 18, the person doing so must be the Parent or Legal Guardian of the children and, must affirm and consent to share the information of the children.</p><h3>THIRD-PARTY DISCLOSURE</h3><p>We do not sell, trade, or make your personal data commercially available to any third party.</p><p>We may share information with our service providers for the completion of the assignment you have entrusted to us or unless such disclosure is required by law of the United Arab Emirates only.</p><h3>ONLINE ADVERTISEMENT OF THIRD PARTY</h3><p>We may also use third parties to display and target ads which might possess certain functionality (such as maps), or to place their own cookies and other tracking technologies to collect, track and analyse usage and statistical information from users. We are not responsible for the information collection practices of any third parties.</p><h3>LINKS TO OTHER SITES</h3><p>Our website, newsletters, email updates and other communications may, from time to time, contain links to and from the websites of others. The personal data that you provide through such websites is not subject to this privacy notice and the treatment of your personal data by such websites is not the responsibility of www.yoocasta.com.</p><p>If you follow a link to any other websites, please note that these websites have their own privacy notices which will set out how your information is collected and processed when visiting those sites.</p><h3>HOW WE PROTECT YOUR DATA</h3><p>We have implemented reasonable administrative, technical and physical measures to protect your personal information against loss, misuse and alteration.</p><h3>SECURITY MEASURES</h3><ul><li>We endeavour to secure your Personal Information from our end, however, no security measures are perfect or impenetrable. To protect the confidentiality of your Personal Information is your responsibility. In case of any unauthorised use of your password, Yoocasta is not responsible and you must advise us immediately by emailing us if you believe your password has been misused.</li><li>https://yoocasta.com/ will not pass any debit/credit card details to third parties.</li><li>The https://yoocasta.com/ is not responsible for the privacy policies of websites to which it links. If you provide any information to such third parties different rules regarding the collection and use of your personal information may apply. You should contact these entities directly if you have any questions about their use of the information that they collect.</li></ul><h3>TRANSFERS OF INFORMATION</h3><p>Information about our customers, including Personal Information, may be disclosed as part of any merger, acquisition, debt financing, sale of company assets, as well as in the event of an insolvency, bankruptcy or receivership in which Personal Information could be transferred to third parties as one of Yoocasta business assets. In such an event, we will attempt to notify you before your Personal Information is transferred, but you may not have the right to opt out of any such transfer.</p><h3>CHANGES TO THIS PRIVACY POLICY</h3><p>This policy was last updated on 10/01/2019. We might change and update this policy from time to time by updating this page. We encourage you to check this page periodically to ensure that you are happy with any changes.</p><h3>POLICY QUESTIONS AND ENFORCEMENT</h3><p>We are committed to protecting the privacy of your personal information. If you have questions or comments about our administration of your personal data or deactivate profile, please contact us at support@yoocasta.com.</p>`,
+  },
+  {
+    pageKey: 'faq',
+    metaTitle: 'FAQ | Yoocasta',
+    metaDescription: 'Find answers to common questions about Yoocasta for talents and companies.',
+    pageHeading: 'Frequently Asked Questions',
+    subHeading: 'Find answers to common questions about Yoocasta.',
+    pageDescription: '',
+    address: '',
+    phone: '',
+    email: '',
+    talentFaqs: JSON.stringify(DEFAULT_TALENT_FAQS),
+    companyFaqs: JSON.stringify(DEFAULT_COMPANY_FAQS),
+    body: '',
+  },
+];
+
+const ensureCmsPages = async () => {
+  for (const page of DEFAULT_CMS_PAGES) {
+    const existing = await prisma.cmsPage.findUnique({ where: { pageKey: page.pageKey } });
+    if (!existing) {
+      await prisma.cmsPage.create({
+        data: {
+          ...page,
+          address: cleanCmsText(page.address),
+          phone: cleanCmsText(page.phone),
+          email: cleanCmsText(page.email),
+          videoUrl: cleanCmsText(page.videoUrl || ''),
+          talentFaqs: page.talentFaqs || '[]',
+          companyFaqs: page.companyFaqs || '[]',
+          body: cleanCmsHtml(page.body),
+        },
+      }).catch(() => {});
+    } else {
+      const clean = cleanCmsHtml(existing.body || '');
+      const updateData: any = {};
+      if (!existing.body || clean !== existing.body) updateData.body = clean;
+      if (!existing.talentFaqs && page.talentFaqs) updateData.talentFaqs = page.talentFaqs;
+      if (!existing.companyFaqs && page.companyFaqs) updateData.companyFaqs = page.companyFaqs;
+      if (!existing.videoUrl && page.videoUrl) updateData.videoUrl = page.videoUrl;
+      if (!existing.bottomHeading && page.bottomHeading) updateData.bottomHeading = page.bottomHeading;
+      if (!existing.bottomDescription && page.bottomDescription) updateData.bottomDescription = page.bottomDescription;
+      if (Object.keys(updateData).length > 0) {
+        await prisma.cmsPage.update({ where: { pageKey: page.pageKey }, data: updateData }).catch(() => {});
+      }
+    }
+  }
+};
+
+export const createCmsPage = async (data: {
+  pageKey: string;
+  metaTitle: string;
+  metaDescription: string;
+  pageHeading: string;
+  subHeading: string;
+  pageDescription: string;
+  address: string;
+  phone: string;
+  email: string;
+  videoUrl?: string;
+  bottomHeading?: string;
+  bottomDescription?: string;
+  talentFaqs?: string;
+  companyFaqs?: string;
+  body: string;
+}) => {
+  return prisma.cmsPage.create({
+    data: {
+      pageKey: data.pageKey.trim(),
+      metaTitle: cleanCmsText(data.metaTitle),
+      metaDescription: cleanCmsText(data.metaDescription),
+      pageHeading: cleanCmsText(data.pageHeading),
+      subHeading: cleanCmsText(data.subHeading),
+      pageDescription: cleanCmsText(data.pageDescription),
+      address: cleanCmsText(data.address),
+      phone: cleanCmsText(data.phone),
+      email: cleanCmsText(data.email),
+      videoUrl: cleanCmsText(data.videoUrl || ''),
+      bottomHeading: cleanCmsText(data.bottomHeading || ''),
+      bottomDescription: cleanCmsText(data.bottomDescription || ''),
+      talentFaqs: data.talentFaqs || '[]',
+      companyFaqs: data.companyFaqs || '[]',
+      body: cleanCmsHtml(data.body || ''),
+    },
+  });
+};
+
+export const updateCmsPage = async (key: string, data: {
+  metaTitle: string;
+  metaDescription: string;
+  pageHeading: string;
+  subHeading: string;
+  pageDescription: string;
+  address: string;
+  phone: string;
+  email: string;
+  videoUrl?: string;
+  bottomHeading?: string;
+  bottomDescription?: string;
+  talentFaqs?: string;
+  companyFaqs?: string;
+  body: string;
+}) => {
+  const existing = await prisma.cmsPage.findUnique({ where: { pageKey: key } });
+  if (!existing) throw { statusCode: 404, message: 'Page not found' };
+  return prisma.cmsPage.update({
+    where: { pageKey: key },
+    data: {
+      metaTitle: cleanCmsText(data.metaTitle),
+      metaDescription: cleanCmsText(data.metaDescription),
+      pageHeading: cleanCmsText(data.pageHeading),
+      subHeading: cleanCmsText(data.subHeading),
+      pageDescription: cleanCmsText(data.pageDescription),
+      address: cleanCmsText(data.address),
+      phone: cleanCmsText(data.phone),
+      email: cleanCmsText(data.email),
+      videoUrl: cleanCmsText(data.videoUrl || ''),
+      bottomHeading: cleanCmsText(data.bottomHeading || ''),
+      bottomDescription: cleanCmsText(data.bottomDescription || ''),
+      talentFaqs: data.talentFaqs !== undefined ? data.talentFaqs : '[]',
+      companyFaqs: data.companyFaqs !== undefined ? data.companyFaqs : '[]',
+      body: cleanCmsHtml(data.body ?? ''),
+    },
+  });
+};
+
+export const deleteCmsPage = async (key: string) => {
+  const existing = await prisma.cmsPage.findUnique({ where: { pageKey: key } });
+  if (!existing) throw { statusCode: 404, message: 'Page not found' };
+  await prisma.cmsPage.delete({ where: { pageKey: key } });
+  return { pageKey: key };
+};

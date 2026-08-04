@@ -206,7 +206,10 @@ export const checkProfileComplete = async (userId: string) => {
     include: { categories: true }
   });
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { subscription: true },
+  });
 
   const isComplete = !!(
     profile &&
@@ -223,6 +226,24 @@ export const checkProfileComplete = async (userId: string) => {
       where: { id: userId },
       data: { profileCompleted: true },
     });
+
+    // Auto-assign Basic plan if talent has no subscription yet
+    if (!user?.subscription) {
+      const basicPlan = await prisma.plan.findFirst({
+        where: { slug: 'basic' },
+      });
+
+      if (basicPlan) {
+        await prisma.userSubscription.create({
+          data: {
+            userId,
+            planId: basicPlan.id,
+            status: 'ACTIVE',
+            activatedAt: new Date(),
+          },
+        });
+      }
+    }
   }
 
   return { isComplete };
