@@ -249,7 +249,7 @@ export const checkProfileComplete = async (userId: string) => {
   return { isComplete };
 };
 
-export const uploadPortfolioMediaService = async (userId: string, file: Express.Multer.File, type: string) => {
+export const uploadPortfolioMediaService = async (userId: string, file: Express.Multer.File, type: string, title?: string) => {
   const profile = await prisma.talentProfile.findUnique({ where: { userId } });
   if (!profile) throw { statusCode: 404, message: 'Profile not found' };
 
@@ -275,6 +275,7 @@ export const uploadPortfolioMediaService = async (userId: string, file: Express.
       talentProfileId: profile.id,
       type: mediaType,
       url,
+      title: title || null,
       order: 0,
     }
   });

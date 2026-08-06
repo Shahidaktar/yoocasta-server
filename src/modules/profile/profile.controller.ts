@@ -63,9 +63,9 @@ export const checkProfileComplete = async (req: AuthRequest, res: Response, next
 export const uploadPortfolioMediaHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.file) return ApiResponse.error(res, 'No file uploaded', 400);
-    const { type } = req.body;
+    const { type, title } = req.body;
     if (!type) return ApiResponse.error(res, 'Media type required', 400);
-    const result = await profileService.uploadPortfolioMediaService(req.user!.userId, req.file, type);
+    const result = await profileService.uploadPortfolioMediaService(req.user!.userId, req.file, type, title);
     ApiResponse.success(res, result, 'Media uploaded successfully', 201);
   } catch (err) { next(err); }
 };

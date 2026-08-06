@@ -383,3 +383,89 @@ export const getTalentFilterOptions = async () => {
     physicalCategorical,
   };
 };
+
+// ─── Featured Talents (Homepage Showroom) ──────────────────────
+const shuffle = <T,>(arr: T[]): T[] => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+const toFloat = (v: any): number => {
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+};
+
+export const getFeaturedTalents = async () => {
+  const R2_BASE = process.env.R2_PUBLIC_URL;
+  const baseWhere: any = { role: 'TALENT', status: 'ACTIVE', profileCompleted: true };
+
+  const select: any = {
+    id: true,
+    username: true,
+    firstName: true,
+    lastName: true,
+    image: true,
+    subscription: { select: { status: true, plan: { select: { slug: true, priority: true } } } },
+    talentProfile: {
+      select: {
+        gender: true,
+        height: true,
+        chest: true,
+        waist: true,
+        shoeSize: true,
+        hairColor: true,
+        eyeColor: true,
+        bioDescription: true,
+        categories: { select: { category: { select: { name: true } } } },
+        city: { select: { name: true, country: { select: { name: true } } } },
+        media: { select: { url: true }, where: { type: 'IMAGE' }, take: 6, orderBy: { createdAt: 'desc' } },
+      },
+    },
+  };
+
+  const mapFeatured = (u: any) => ({
+    id: u.id,
+    username: u.username,
+    name: u.firstName || u.username || 'Talent',
+    gender: u.talentProfile?.gender === 'male' ? 'Male' : u.talentProfile?.gender === 'female' ? 'Female' : 'Non-binary',
+    categories: u.talentProfile?.categories.map((c: any) => c.category.name) || [],
+    location: u.talentProfile?.city ? `${u.talentProfile.city.name}, ${u.talentProfile.city.country?.name || ''}`.trim().replace(/,$/, '') : '',
+    profileImage: u.image ? `${R2_BASE}/profile/${u.image}` : 'https://via.placeholder.com/400x600?text=Yoocasta',
+    galleryImages: (u.talentProfile?.media || []).map((m: any) => m.url),
+    bio: u.talentProfile?.bioDescription || '',
+    isPremium: u.subscription?.status === 'ACTIVE' && (u.subscription.plan.priority || 0) > 0,
+    stats: {
+      height: toFloat(u.talentProfile?.height),
+      chestOrBust: toFloat(u.talentProfile?.chest),
+      waist: toFloat(u.talentProfile?.waist),
+      shoeSize: toFloat(u.talentProfile?.shoeSize),
+      eyeColor: u.talentProfile?.eyeColor || '',
+      hairColor: u.talentProfile?.hairColor || '',
+    },
+    experience: [],
+  });
+
+  const [premiumUsers, basicUsers] = await Promise.all([
+    prisma.user.findMany({
+      where: { ...baseWhere, subscription: { status: 'ACTIVE', plan: { priority: { gt: 0 } } } },
+      select,
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    }),
+    prisma.user.findMany({
+      where: { ...baseWhere, subscription: { status: 'ACTIVE', plan: { slug: 'basic' } } },
+      select,
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    }),
+  ]);
+
+  const premium = shuffle(premiumUsers).slice(0, 3).map(mapFeatured);
+  const basic = shuffle(basicUsers).map(mapFeatured);
+
+  return [...premium, ...basic].slice(0, 6);
+};

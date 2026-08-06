@@ -558,10 +558,26 @@ model CastBagLink {
   expiresAt       DateTime?
 
   feedback        CastBagFeedback[]
+  guests          CastBagGuest[]
 
   createdAt       DateTime @default(now())
 
   @@map("cast_bag_links")
+}
+
+model CastBagGuest {
+  id              String   @id @default(uuid())
+  linkId          String
+  link            CastBagLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  email           String
+  passwordHash    String
+  expiresAt       DateTime
+
+  createdAt       DateTime @default(now())
+
+  @@unique([linkId, email])
+  @@map("cast_bag_guests")
 }
 
 model CastBagFeedback {
@@ -576,6 +592,7 @@ model CastBagFeedback {
   reviewerEmail   String?
   comment         String?
   rating          Int?     // optional rating
+  decision        String?  // 'Preferred' | 'Reserve' | 'Pass'
 
   createdAt       DateTime @default(now())
 

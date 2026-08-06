@@ -70,6 +70,8 @@ app.use('/api/v1/contact', contactRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
 app.get('/api/v1/cast-bags/public/:token', castBagController.getPublic);
+app.post('/api/v1/cast-bags/public/:token/feedback/login', castBagController.feedbackLogin);
+app.post('/api/v1/cast-bags/public/:token/feedback', castBagController.submitFeedback);
 
 app.get('/api/v1/filter-options', (req, res) => {
   try {

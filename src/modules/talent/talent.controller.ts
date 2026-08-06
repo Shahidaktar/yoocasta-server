@@ -38,6 +38,16 @@ export const getCategoryCounts = async (req: Request, res: Response) => {
   }
 };
 
+export const getFeaturedTalents = async (req: Request, res: Response) => {
+  try {
+    const data = await talentSearchService.getFeaturedTalents();
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to load featured talents' });
+  }
+};
+
 export const search = async (req: Request, res: Response) => {
   try {
     const result = await talentSearchService.searchTalents(req.body);

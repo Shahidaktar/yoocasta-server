@@ -26,5 +26,6 @@ router.get('/cast-bags', castBagController.list);
 router.delete('/cast-bags/:bagId', castBagController.remove);
 router.post('/cast-bags/:bagId/talents', castBagController.addTalents);
 router.post('/cast-bags/:bagId/share', castBagController.share);
+router.get('/cast-bags/:bagId/feedbacks', castBagController.getFeedbacks);
 
 export default router;

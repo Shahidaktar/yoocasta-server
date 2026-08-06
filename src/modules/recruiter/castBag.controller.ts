@@ -54,3 +54,31 @@ export const getPublic = async (req: AuthRequest, res: Response, next: NextFunct
     ApiResponse.success(res, result);
   } catch (err) { next(err); }
 };
+
+export const feedbackLogin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const token = req.params.token as string;
+    const { email, password } = req.body;
+    if (!email?.trim() || !password) return ApiResponse.error(res, 'Email and password are required', 400);
+    const result = await castBagService.validateFeedbackGuest(token, email.trim(), password);
+    ApiResponse.success(res, result, 'Feedback login successful');
+  } catch (err) { next(err); }
+};
+
+export const submitFeedback = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const token = req.params.token as string;
+    const { guestToken, talentUserId, rating, comment, decision } = req.body;
+    if (!guestToken || !talentUserId) return ApiResponse.error(res, 'guestToken and talentUserId are required', 400);
+    const result = await castBagService.submitCastBagFeedback(token, { guestToken, talentUserId, rating, comment, decision });
+    ApiResponse.success(res, result, 'Feedback submitted');
+  } catch (err) { next(err); }
+};
+
+export const getFeedbacks = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const bagId = req.params.bagId as string;
+    const result = await castBagService.getCastBagFeedbacks(req.user!.userId, bagId);
+    ApiResponse.success(res, result, 'Feedbacks fetched');
+  } catch (err) { next(err); }
+};
