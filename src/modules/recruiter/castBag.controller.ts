@@ -58,9 +58,9 @@ export const getPublic = async (req: AuthRequest, res: Response, next: NextFunct
 export const feedbackLogin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const token = req.params.token as string;
-    const { email, password } = req.body;
+    const { email, password, talentUserId } = req.body;
     if (!email?.trim() || !password) return ApiResponse.error(res, 'Email and password are required', 400);
-    const result = await castBagService.validateFeedbackGuest(token, email.trim(), password);
+    const result = await castBagService.validateFeedbackGuest(token, email.trim(), password, talentUserId);
     ApiResponse.success(res, result, 'Feedback login successful');
   } catch (err) { next(err); }
 };

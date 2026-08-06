@@ -209,7 +209,7 @@ export const getPublicCastBag = async (token: string) => {
   };
 };
 
-export const validateFeedbackGuest = async (token: string, email: string, password: string) => {
+export const validateFeedbackGuest = async (token: string, email: string, password: string, talentUserId?: string) => {
   const link = await prisma.castBagLink.findUnique({ where: { token } });
   if (!link || !link.status) throw { statusCode: 404, message: 'Cast bag not found or expired' };
   if (link.expiresAt && new Date(link.expiresAt) < new Date()) throw { statusCode: 410, message: 'This cast bag link has expired' };
@@ -223,9 +223,11 @@ export const validateFeedbackGuest = async (token: string, email: string, passwo
   const passwordOk = await comparePassword(password, guest.passwordHash);
   if (!passwordOk) throw { statusCode: 401, message: 'Invalid feedback credentials for this cast bag' };
 
-  const alreadySubmitted = await prisma.castBagFeedback.findFirst({
-    where: { linkId: link.id, reviewerEmail: guest.email },
-  });
+  const alreadySubmitted = talentUserId
+    ? await prisma.castBagFeedback.findFirst({
+        where: { linkId: link.id, reviewerEmail: guest.email, talentUserId },
+      })
+    : null;
 
   const remainingSeconds = Math.max(1, Math.floor((guest.expiresAt.getTime() - Date.now()) / 1000));
   const guestToken = jwt.sign(
@@ -265,9 +267,9 @@ export const submitCastBagFeedback = async (
   if (guest.expiresAt < new Date()) throw { statusCode: 401, message: 'Feedback credentials have expired' };
 
   const existing = await prisma.castBagFeedback.findFirst({
-    where: { linkId: link.id, reviewerEmail: guest.email },
+    where: { linkId: link.id, reviewerEmail: guest.email, talentUserId },
   });
-  if (existing) throw { statusCode: 409, message: 'Feedback already submitted. Only one feedback per guest is allowed.' };
+  if (existing) throw { statusCode: 409, message: 'Feedback already submitted for this talent' };
 
   if (rating !== undefined && rating !== null && (rating < 1 || rating > 5)) {
     throw { statusCode: 400, message: 'Rating must be between 1 and 5' };
