@@ -664,7 +664,7 @@ export const getCmsPages = async (req: Request, res: Response, next: NextFunctio
 
 export const createCmsPage = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { pageKey, metaTitle, metaDescription, pageHeading, subHeading, pageDescription, address, phone, email, videoUrl, bottomHeading, bottomDescription, talentFaqs, companyFaqs, body } = req.body;
+    const { pageKey, metaTitle, metaDescription, pageHeading, subHeading, pageDescription, address, phone, email, videoUrl, bottomHeading, bottomDescription, talentFaqs, companyFaqs, videoSection, testimonialsSection, faqSection, body } = req.body;
     if (!pageKey || !pageKey.trim()) return ApiResponse.error(res, 'Page key is required', 400);
     const result = await adminService.createCmsPage({
       pageKey,
@@ -681,6 +681,9 @@ export const createCmsPage = async (req: Request, res: Response, next: NextFunct
       bottomDescription: bottomDescription || '',
       talentFaqs: talentFaqs || '[]',
       companyFaqs: companyFaqs || '[]',
+      videoSection: videoSection || '[]',
+      testimonialsSection: testimonialsSection || '[]',
+      faqSection: faqSection || '[]',
       body: body || '',
     });
     return ApiResponse.success(res, result, 'Page created');
@@ -700,7 +703,7 @@ export const getCmsPageByKey = async (req: Request, res: Response, next: NextFun
 
 export const updateCmsPage = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { metaTitle, metaDescription, pageHeading, subHeading, pageDescription, address, phone, email, videoUrl, bottomHeading, bottomDescription, talentFaqs, companyFaqs, body } = req.body;
+    const { metaTitle, metaDescription, pageHeading, subHeading, pageDescription, address, phone, email, videoUrl, bottomHeading, bottomDescription, talentFaqs, companyFaqs, videoSection, testimonialsSection, faqSection, body } = req.body;
     const result = await adminService.updateCmsPage(req.params.key as string, {
       metaTitle: metaTitle || '',
       metaDescription: metaDescription || '',
@@ -715,6 +718,9 @@ export const updateCmsPage = async (req: Request, res: Response, next: NextFunct
       bottomDescription: bottomDescription || '',
       talentFaqs: talentFaqs || '[]',
       companyFaqs: companyFaqs || '[]',
+      videoSection: videoSection !== undefined ? videoSection : '[]',
+      testimonialsSection: testimonialsSection !== undefined ? testimonialsSection : '[]',
+      faqSection: faqSection !== undefined ? faqSection : '[]',
       body: body || '',
     });
     return ApiResponse.success(res, result, 'Page updated');

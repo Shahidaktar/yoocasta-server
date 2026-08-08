@@ -1489,6 +1489,105 @@ const DEFAULT_COMPANY_FAQS = [
   { q: 'I have confirmed/selected the talents. What Next?', a: 'Great News! Someone from Yoocasta team shall get in touch with you to proceed further with the project. Alternatively, please feel free to call us on 971582224178 or send us an email at support@yoocasta.com.' },
 ];
 
+const DEFAULT_VIDEO_SECTION = [
+  {
+    id: '1',
+    title: 'Cyber Couture Editorial Walk',
+    talentName: 'Amira Al-Mansoori',
+    category: 'High Fashion Runway',
+    location: 'Dubai Design District',
+    videoUrl: 'https://pub-9a6daccdd56649a4bb690162026e4c5d.r2.dev/casting_video/casting_video_10005.mp4',
+    posterUrl: '',
+    views: '12.4K views',
+    tags: ['Aesthetic Walk', 'Silver Metallic', 'Elite Model']
+  },
+  {
+    id: '2',
+    title: 'Neo-Glow Audition Reel',
+    talentName: 'Zayd Al-Hassan',
+    category: 'Commercial Screen Play',
+    location: 'Riyadh Studio',
+    videoUrl: 'https://pub-9a6daccdd56649a4bb690162026e4c5d.r2.dev/casting_video/casting_video_10158.mp4',
+    posterUrl: '',
+    views: '8.9K views',
+    tags: ['Neon Cinematic', 'GCC Commercial', 'Acting Lead']
+  },
+  {
+    id: '3',
+    title: 'Golden Hour Beauty Portfolio',
+    talentName: 'Elena Rostova',
+    category: 'Editorial Portrait Reel',
+    location: 'Jumeirah Beach Coast',
+    videoUrl: 'https://pub-9a6daccdd56649a4bb690162026e4c5d.r2.dev/casting_video/casting_video_10107.mp4',
+    posterUrl: '',
+    views: '15.2K views',
+    tags: ['Gloss Gold', 'Luxury Cosmetics', 'Face Model']
+  },
+  {
+    id: '4',
+    title: 'Vanguard Motion Showreel',
+    talentName: 'Malik Al-Sayed',
+    category: 'Cinematic Movement Reel',
+    location: 'Downtown Dubai',
+    videoUrl: 'https://pub-9a6daccdd56649a4bb690162026e4c5d.r2.dev/casting_video/casting_video_11145.mp4',
+    posterUrl: '',
+    views: '18.7K views',
+    tags: ['Vanguard Look', 'Urban Luxury', 'Commercial Pro']
+  }
+];
+
+const DEFAULT_TESTIMONIALS_SECTION = [
+  {
+    id: 'test1',
+    name: 'Baraa Rahmy',
+    role: 'Fashion Model & Actor',
+    image: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=300',
+    rating: 5,
+    quote: 'Yoocasta is hands down the absolute best! The projects I have been casted for are legendary, professional, and helped me secure my residency visa in Dubai. Extremely supportive team.',
+    verified: true,
+    project: 'Emaar Properties Promo',
+  },
+  {
+    id: 'test2',
+    name: 'Elnura Abdykasymova',
+    role: 'Commercial Model',
+    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+    rating: 5,
+    quote: 'The booking process was incredibly clear and honest. I booked the L\'Oréal hair commercial within my second week of registering! They pay exactly on time which is so rare in this industry.',
+    verified: true,
+    project: 'L\'Oréal Hair Commercial',
+  },
+  {
+    id: 'test3',
+    name: 'Evelina Alvarado',
+    role: 'Hostess & Promoter',
+    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
+    rating: 5,
+    quote: 'Being a premium member is so worth it. The priority application and premium casting alerts gave me 3 high-paid hosting jobs at Dubai World Trade Center this quarter alone!',
+    verified: true,
+    project: 'DWTC Luxury Expo 2026',
+  },
+];
+
+const DEFAULT_FAQ_SECTION = [
+  {
+    question: 'How do I submit my application for Casting Opportunities?',
+    answer: 'Browse open casting calls on our dashboard, click on the card to see the full brief and rates, and click "Submit Application". Enter your registered email or profile link, upload a quick customized video or comment, and the casting team will instantly receive your comp card.',
+  },
+  {
+    question: 'What is a Yoocasta Premium Membership and is it required?',
+    answer: 'While basic profiles are free to create, our Premium Membership gives talents unlimited casting applications, priority visibility on director searches, a custom URL, and instant WhatsApp alerts for exclusive VIP campaigns. Standard premium is AED 20 per month.',
+  },
+  {
+    question: 'How long does a booking confirmation take in the Middle East?',
+    answer: 'Most commercial shoots and corporate events have short-turnarounds. After the casting team submits the shortlisted comp cards, brands usually finalize selection within 3 to 7 working days. If selected, our booking managers will contact you immediately via phone and WhatsApp.',
+  },
+  {
+    question: 'I am a Brand or Director. How do I hire from Yoocasta?',
+    answer: 'You can instantly publish a custom casting call by clicking "Post a Casting" on our header. Alternatively, reach out directly to management to access our advanced offline catalog and arrange private auditions at our Sharjah and Dubai partners.',
+  },
+];
+
 const DEFAULT_CMS_PAGES = [
   {
     pageKey: 'home',
@@ -1503,6 +1602,9 @@ const DEFAULT_CMS_PAGES = [
     videoUrl: 'https://pub-9a6daccdd56649a4bb690162026e4c5d.r2.dev/casting_video/casting_video_10107.mp4',
     bottomHeading: 'Connecting Talents & Opportunities',
     bottomDescription: 'Your own online casting agency',
+    videoSection: JSON.stringify(DEFAULT_VIDEO_SECTION),
+    testimonialsSection: JSON.stringify(DEFAULT_TESTIMONIALS_SECTION),
+    faqSection: JSON.stringify(DEFAULT_FAQ_SECTION),
     body: '',
   },
   {
@@ -1633,6 +1735,9 @@ const ensureCmsPages = async () => {
           videoUrl: cleanCmsText(page.videoUrl || ''),
           talentFaqs: page.talentFaqs || '[]',
           companyFaqs: page.companyFaqs || '[]',
+          videoSection: page.videoSection || '[]',
+          testimonialsSection: page.testimonialsSection || '[]',
+          faqSection: page.faqSection || '[]',
           body: cleanCmsHtml(page.body),
         },
       }).catch(() => {});
@@ -1642,6 +1747,9 @@ const ensureCmsPages = async () => {
       if (!existing.body || clean !== existing.body) updateData.body = clean;
       if (!existing.talentFaqs && page.talentFaqs) updateData.talentFaqs = page.talentFaqs;
       if (!existing.companyFaqs && page.companyFaqs) updateData.companyFaqs = page.companyFaqs;
+      if ((!existing.videoSection || existing.videoSection === '[]') && page.videoSection) updateData.videoSection = page.videoSection;
+      if ((!existing.testimonialsSection || existing.testimonialsSection === '[]') && page.testimonialsSection) updateData.testimonialsSection = page.testimonialsSection;
+      if ((!existing.faqSection || existing.faqSection === '[]') && page.faqSection) updateData.faqSection = page.faqSection;
       if (!existing.videoUrl && page.videoUrl) updateData.videoUrl = page.videoUrl;
       if (!existing.bottomHeading && page.bottomHeading) updateData.bottomHeading = page.bottomHeading;
       if (!existing.bottomDescription && page.bottomDescription) updateData.bottomDescription = page.bottomDescription;
@@ -1667,6 +1775,9 @@ export const createCmsPage = async (data: {
   bottomDescription?: string;
   talentFaqs?: string;
   companyFaqs?: string;
+  videoSection?: string;
+  testimonialsSection?: string;
+  faqSection?: string;
   body: string;
 }) => {
   return prisma.cmsPage.create({
@@ -1685,6 +1796,9 @@ export const createCmsPage = async (data: {
       bottomDescription: cleanCmsText(data.bottomDescription || ''),
       talentFaqs: data.talentFaqs || '[]',
       companyFaqs: data.companyFaqs || '[]',
+      videoSection: data.videoSection !== undefined ? data.videoSection : '[]',
+      testimonialsSection: data.testimonialsSection !== undefined ? data.testimonialsSection : '[]',
+      faqSection: data.faqSection !== undefined ? data.faqSection : '[]',
       body: cleanCmsHtml(data.body || ''),
     },
   });
@@ -1704,6 +1818,9 @@ export const updateCmsPage = async (key: string, data: {
   bottomDescription?: string;
   talentFaqs?: string;
   companyFaqs?: string;
+  videoSection?: string;
+  testimonialsSection?: string;
+  faqSection?: string;
   body: string;
 }) => {
   const existing = await prisma.cmsPage.findUnique({ where: { pageKey: key } });
@@ -1724,6 +1841,9 @@ export const updateCmsPage = async (key: string, data: {
       bottomDescription: cleanCmsText(data.bottomDescription || ''),
       talentFaqs: data.talentFaqs !== undefined ? data.talentFaqs : '[]',
       companyFaqs: data.companyFaqs !== undefined ? data.companyFaqs : '[]',
+      videoSection: data.videoSection !== undefined ? data.videoSection : '[]',
+      testimonialsSection: data.testimonialsSection !== undefined ? data.testimonialsSection : '[]',
+      faqSection: data.faqSection !== undefined ? data.faqSection : '[]',
       body: cleanCmsHtml(data.body ?? ''),
     },
   });

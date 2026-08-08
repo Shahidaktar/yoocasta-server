@@ -327,6 +327,36 @@ export const submitCastBagFeedback = async (
   return { message: 'Feedback submitted successfully', id: feedback.id };
 };
 
+export const castBagFeedbackStatus = async (token: string, guestToken: string, talentUserId: string) => {
+  let decoded: any;
+  try {
+    decoded = jwt.verify(guestToken, JWT_SECRET);
+  } catch {
+    return { alreadySubmitted: false, valid: false };
+  }
+  if (decoded.type !== 'castbag-guest') return { alreadySubmitted: false, valid: false };
+
+  const link = await prisma.castBagLink.findUnique({ where: { token } });
+  if (!link || !link.status || decoded.linkId !== link.id) return { alreadySubmitted: false, valid: false };
+  if (link.expiresAt && new Date(link.expiresAt) < new Date()) return { alreadySubmitted: false, valid: false };
+
+  const guest = await prisma.castBagGuest.findUnique({ where: { id: decoded.guestId } });
+  if (!guest || guest.linkId !== link.id) return { alreadySubmitted: false, valid: false };
+  if (guest.expiresAt < new Date()) return { alreadySubmitted: false, valid: false };
+
+  const alreadySubmitted = talentUserId
+    ? Boolean(await prisma.castBagFeedback.findFirst({
+        where: { linkId: link.id, reviewerEmail: guest.email, talentUserId },
+      }))
+    : false;
+
+  return {
+    alreadySubmitted,
+    valid: true,
+    email: guest.email,
+  };
+};
+
 export const getCastBagFeedbacks = async (userId: string, bagId: string) => {
   const bag = await prisma.castBag.findFirst({
     where: { id: bagId, ownerId: userId },

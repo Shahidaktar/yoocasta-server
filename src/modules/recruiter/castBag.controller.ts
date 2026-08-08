@@ -75,6 +75,16 @@ export const submitFeedback = async (req: AuthRequest, res: Response, next: Next
   } catch (err) { next(err); }
 };
 
+export const feedbackStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const token = req.params.token as string;
+    const { guestToken, talentUserId } = req.body;
+    if (!guestToken || !talentUserId) return ApiResponse.error(res, 'guestToken and talentUserId are required', 400);
+    const result = await castBagService.castBagFeedbackStatus(token, guestToken, talentUserId);
+    ApiResponse.success(res, result, 'Feedback status fetched');
+  } catch (err) { next(err); }
+};
+
 export const getFeedbacks = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const bagId = req.params.bagId as string;
